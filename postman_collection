@@ -1,0 +1,42 @@
+{
+	"info": {
+		"_postman_id": "29e7828b-2709-4fc0-a68c-594f7ad7584e",
+		"name": "Postman Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30248514",
+		"_collection_link": "https://lively-space-813403.postman.co/workspace/a~38b1f74c-0551-4858-8229-36a6eea72640/collection/30248514-29e7828b-2709-4fc0-a68c-594f7ad7584e?action=share&source=collection_link&creator=30248514"
+	},
+	"item": [
+		{
+			"name": "Run Pipeline",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"databaseConfig\": {\r\n        \"type\": \"postgres\",\r\n        \"connectionConfig\": {\r\n            \"host\": \"host\",\r\n            \"port\": 123,\r\n            \"database\": \"postgres\",\r\n            \"user\": \"user\",\r\n            \"password\": \"supersecret\"\r\n        },\r\n        \"capturedTables\": [\r\n            \"hello.world\"\r\n        ]\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/pipeline/run",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"pipeline",
+						"run"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
