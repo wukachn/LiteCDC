@@ -2,8 +2,16 @@ package com.thirdyearproject.changedatacaptureapplication.api.model.database;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Properties;
+import lombok.Builder;
 import lombok.NonNull;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
+@Value
+@Builder
+@Jacksonized
 public class PostgresConnectionConfiguration implements ConnectionConfiguration {
   @NonNull String host;
   @NonNull Integer port;
@@ -23,6 +31,11 @@ public class PostgresConnectionConfiguration implements ConnectionConfiguration 
     var properties = new Properties();
     properties.setProperty("user", user);
     properties.setProperty("password", password);
+    properties.setProperty("replication", "database");
+    properties.setProperty("preferQueryMode", "simple");
+    // Exported snapshots Minimum Version: Postgres 9.4+
+    properties.setProperty("assumeMinServerVersion", "9.4");
+    properties.setProperty("ApplicationName", "CDC Snapshot Slot");
     return properties;
   }
 }

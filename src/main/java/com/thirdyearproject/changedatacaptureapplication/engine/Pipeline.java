@@ -18,6 +18,6 @@ public class Pipeline implements Closeable, Runnable {
 
   @Override
   public void run() {
-    snapshotter.lockingSnapshot(pipelineConfiguration.getDatabaseConfig().getTables());
+    snapshotter.snapshot(pipelineConfiguration.getDatabaseConfig().getTables());
   }
 }

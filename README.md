@@ -2,8 +2,7 @@
 
 Run the App
 1. `mvn clean install`
-2. `docker build -f Dockerfile -t cdc-app .`
-3. `docker run -p 8080:8080 -t cdc-app`
+2. `docker-compose up -d`
 
 Lucid Chart: https://lucid.app/lucidchart/b21cdc93-e535-4cff-abe6-6bfbcc1910bc/edit?invitationId=inv_6d264c25-5c45-4cff-81c6-cb8350444901
 
@@ -17,3 +16,27 @@ Reformat Directory (Windows): CTRL + ALT + L
    - Basic Spring App - With Basic API Request
    - Initial Code Flow of Pipeline Creation
  - Created Test RDS Postgres Database
+
+
+## Week 3/4
+
+Set up initial snapshot environment
+
+`ALTER SYSTEM SET wal_level = logical;`
+rds.logical_replication=1
+
+Starting to work on setting up the initial snapshot environment. We need to snapshot a consistent view of the database.
+
+`CREATE_REPLICATION_SLOT \"slot_name\" LOGICAL pgoutput;` creates a snapshot of the database internally, and returns the consistent_point in which we are going to snapshot then stream from.
+Be aware that snapshots are still tied to the life cycle of their associated transaction, and giving them IDs doesn't change anything. 
+Once the exporting transaction commits or rolls back, new transactions trying to access an exported snapshot will see:
+db=> set transaction snapshot '000ED905-1';
+ERROR:  invalid snapshot identifier: "000ED905-1"
+(https://www.willglynn.com/2013/10/25/postgresql-snapshot-export/)
+(https://www.postgresql.org/docs/9.3/functions-admin.html#:~:text=9.26.5.-,Snapshot%20Synchronization%20Functions,-PostgreSQL%20allows%20database)
+
+`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;` only sees data committed before the transaction began; 
+It never sees either uncommitted data or changes committed by concurrent transactions during the transaction's execution.
+
+Started to experiment with kafka. This lead me to start using a `docker-compose.yml` file to spin up the full app stack.
+(https://howtodoinjava.com/kafka/kafka-cluster-setup-using-docker-compose/)
