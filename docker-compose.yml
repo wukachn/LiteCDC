@@ -36,3 +36,16 @@ services:
     image: cdc-app:latest
     ports:
       - 8080:8080
+
+  postgres:
+    image: debezium/postgres:10-alpine
+    environment:
+      POSTGRES_DB: "postgres_db"
+      POSTGRES_USER: "postgres_user"
+      POSTGRES_PASSWORD: "postgres_password"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./testing/setup_postgres.sql:/docker-entrypoint-initdb.d/setup_postgres.sql
+    profiles:
+      - local-

@@ -2,7 +2,7 @@
 
 Run the App
 1. `mvn clean install`
-2. `docker-compose up -d`
+2. `docker-compose --profile local-postgres up --build` (local postgres test db)
 
 Lucid Chart: https://lucid.app/lucidchart/b21cdc93-e535-4cff-abe6-6bfbcc1910bc/edit?invitationId=inv_6d264c25-5c45-4cff-81c6-cb8350444901
 
@@ -40,3 +40,8 @@ It never sees either uncommitted data or changes committed by concurrent transac
 
 Started to experiment with kafka. This lead me to start using a `docker-compose.yml` file to spin up the full app stack.
 (https://howtodoinjava.com/kafka/kafka-cluster-setup-using-docker-compose/)
+
+I had to start to use a local instance of postgres, I ran out of the AWS free tier.
+
+Started to capture the data in the snapshot. Currently, a Struct is built which allows us to track each column name, type and value. 
+The next steps are to build more of the actual change object with some added metadata, and send it off to kafka. 

@@ -17,7 +17,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"databaseConfig\": {\r\n        \"type\": \"postgres\",\r\n        \"connectionConfig\": {\r\n            \"host\": \"host\",\r\n            \"port\": 123,\r\n            \"database\": \"postgres\",\r\n            \"user\": \"user\",\r\n            \"password\": \"supersecret\"\r\n        },\r\n        \"capturedTables\": [\r\n            \"hello.world\"\r\n        ]\r\n    }\r\n}",
+					"raw": "{\r\n    \"databaseConfig\": {\r\n        \"type\": \"postgres\",\r\n        \"connectionConfig\": {\r\n            \"host\": \"postgres\",\r\n            \"port\": 5432,\r\n            \"database\": \"postgres_db\",\r\n            \"user\": \"postgres_user\",\r\n            \"password\": \"postgres_password\"\r\n        },\r\n        \"capturedTables\": [\r\n            \"public.newtable\"\r\n        ]\r\n    }\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
