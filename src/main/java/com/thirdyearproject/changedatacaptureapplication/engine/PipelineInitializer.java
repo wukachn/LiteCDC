@@ -1,6 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.engine;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.PipelineConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -10,8 +11,8 @@ public class PipelineInitializer {
 
   private final PipelineFactory pipelineFactory;
 
-  public PipelineInitializer() {
-    this.pipelineFactory = new PipelineFactory();
+  public PipelineInitializer(ChangeEventProducer changeEventProducer) {
+    this.pipelineFactory = new PipelineFactory(changeEventProducer);
   }
 
   public void runPipeline(PipelineConfiguration config) {

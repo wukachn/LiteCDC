@@ -1,3 +1,4 @@
 spring:
   kafka:
     bootstrap-servers: broker:9092
+    topic-prefix: thirdyearproject

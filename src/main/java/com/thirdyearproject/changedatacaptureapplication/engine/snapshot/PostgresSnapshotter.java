@@ -1,13 +1,15 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.snapshot;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.thirdyearproject.changedatacaptureapplication.api.model.database.ConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEvent;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.util.TypeConverter;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
@@ -24,6 +26,12 @@ public class PostgresSnapshotter extends Snapshotter {
   private static final String DROP_REPLICATION_SLOT =
       "SELECT PG_DROP_REPLICATION_SLOT('cdc_snapshot')";
   private static final String SELECT_ALL = "SELECT * FROM %s";
+  private static final Schema METADATA_SCHEMA =
+      SchemaBuilder.struct()
+          .field("walStartLsn", Schema.STRING_SCHEMA)
+          .field("tableIdentifier", Schema.STRING_SCHEMA)
+          .name("metadata")
+          .build();
   private PostgresSnapshotInfo snapshotInfo;
 
   /* We need to use a separate connection for the replication slot as "snapshots are tied to the life cycle of their associated transaction."
@@ -70,7 +78,7 @@ public class PostgresSnapshotter extends Snapshotter {
         var schema = tableStr.split("\\.")[0];
         var table = tableStr.split("\\.")[1];
 
-        var structSchemaBuilder = SchemaBuilder.struct();
+        var structSchemaBuilder = SchemaBuilder.struct().name(tableStr);
         try (var columnMetadata = metadata.getColumns(null, schema, table, null)) {
           while (columnMetadata.next()) {
             var columnName = columnMetadata.getString(4); // COLUMN_NAME
@@ -86,7 +94,8 @@ public class PostgresSnapshotter extends Snapshotter {
   }
 
   @Override
-  protected void snapshotTables(Set<String> tables) throws SQLException {
+  protected void snapshotTables(Set<String> tables, ChangeEventProducer changeEventProducer)
+      throws SQLException {
     try (var conn = jdbcConnection.getConnection();
         var stmt = conn.createStatement()) {
       for (var tableStr : tables) {
@@ -109,19 +118,15 @@ public class PostgresSnapshotter extends Snapshotter {
                   default -> rs.getString(fieldName);
                 });
           }
-          // TODO: build and send object to kafka.
-          for (Field field : row.schema().fields()) {
-            String fieldName = field.name();
-            Schema fieldSchema = field.schema();
-            Object fieldValue = row.get(fieldName);
-
-            log.info("Field: " + fieldName);
-            log.info("Type: " + fieldSchema.type());
-            log.info("Value: " + fieldValue);
-            log.info("-------------------------------");
-          }
+          var metadata = new Struct(METADATA_SCHEMA);
+          metadata.put("walStartLsn", snapshotInfo.getWalStartLsn());
+          metadata.put("tableIdentifier", tableStr);
+          var changeEvent = ChangeEvent.builder().metadata(metadata).after(row).build();
+          changeEventProducer.sendEvent(changeEvent);
         }
       }
+    } catch (JsonMappingException e) {
+      throw new RuntimeException(e);
     }
   }
 

@@ -45,3 +45,8 @@ I had to start to use a local instance of postgres, I ran out of the AWS free ti
 
 Started to capture the data in the snapshot. Currently, a Struct is built which allows us to track each column name, type and value. 
 The next steps are to build more of the actual change object with some added metadata, and send it off to kafka. 
+
+## Week 5/Reading Week
+
+Created simple kafka application. Can now push and pull change data from kafka. This caused more issues than expected, I had a lot of issues with serialization/deserialization. 
+I was concerned about performance, so I was hesitant to go the json route. I finally got everything working using avro, which should be more performant anyway.

@@ -1,6 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.snapshot;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,7 +20,7 @@ public abstract class Snapshotter {
     this.tableSchemaMap = new HashMap<>();
   }
 
-  public void snapshot(Set<String> tables) {
+  public void snapshot(Set<String> tables, ChangeEventProducer changeEventProducer) {
     log.info(
         String.format("Starting snapshot on the following tables: %s", String.join(", ", tables)));
 
@@ -31,7 +32,7 @@ public abstract class Snapshotter {
       captureStructure(tables);
 
       log.info("Step 3: Snapshotting content of tables");
-      snapshotTables(tables);
+      snapshotTables(tables, changeEventProducer);
 
       log.info("Snapshot Complete.");
       snapshotComplete();
@@ -44,7 +45,8 @@ public abstract class Snapshotter {
 
   protected abstract void captureStructure(Set<String> tables) throws SQLException;
 
-  protected abstract void snapshotTables(Set<String> tables) throws SQLException;
+  protected abstract void snapshotTables(
+      Set<String> tables, ChangeEventProducer changeEventProducer) throws SQLException;
 
   protected abstract void snapshotComplete() throws SQLException;
 }
