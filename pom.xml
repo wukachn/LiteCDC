@@ -30,7 +30,6 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -73,6 +72,11 @@
             <groupId>io.confluent</groupId>
             <artifactId>kafka-connect-avro-data</artifactId>
             <version>7.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.impossibl.pgjdbc-ng</groupId>
+            <artifactId>pgjdbc-ng</artifactId>
+            <version>0.8.9</version>
         </dependency>
     </dependencies>
     <build>

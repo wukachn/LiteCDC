@@ -6,6 +6,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.snapshot.Snapsho
 import com.thirdyearproject.changedatacaptureapplication.engine.streaming.Streamer;
 import java.io.Closeable;
 import java.io.IOException;
+import java.sql.SQLException;
 import lombok.Builder;
 
 @Builder
@@ -22,5 +23,10 @@ public class Pipeline implements Closeable, Runnable {
   public void run() {
     snapshotter.snapshot(
         pipelineConfiguration.getDatabaseConfig().getTables(), changeEventProducer);
+    try {
+      streamer.stream();
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

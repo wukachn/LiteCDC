@@ -21,10 +21,11 @@ public class PostgresSnapshotter extends Snapshotter {
   private static final String SET_TRANSACTION_SNAPSHOT = "SET TRANSACTION SNAPSHOT '%s'";
 
   private static final String CREATE_REPLICATION_SLOT =
-      "CREATE_REPLICATION_SLOT \"cdc_snapshot\" LOGICAL pgoutput";
+      "CREATE_REPLICATION_SLOT \"cdc_replication_slot\" LOGICAL pgoutput";
 
-  private static final String DROP_REPLICATION_SLOT =
-      "SELECT PG_DROP_REPLICATION_SLOT('cdc_snapshot')";
+  private static final String CREATE_PUBLICATION =
+      "CREATE PUBLICATION cdc_publication FOR ALL TABLES;";
+
   private static final String SELECT_ALL = "SELECT * FROM %s";
   private static final Schema METADATA_SCHEMA =
       SchemaBuilder.struct()
@@ -45,9 +46,12 @@ public class PostgresSnapshotter extends Snapshotter {
 
   @Override
   protected void createSnapshotEnvironment() throws SQLException {
+    log.info("Creating Publication with Statement: {}", CREATE_PUBLICATION);
+    var stmt = replicationSlotConnection.getConnection().createStatement();
+    stmt.execute(CREATE_PUBLICATION);
+
     log.info("Creating snapshot replication slot with statement: {}", CREATE_REPLICATION_SLOT);
     this.replicationSlotConnection.setAutoCommit(true);
-    var stmt = this.replicationSlotConnection.getConnection().createStatement();
     stmt.execute(CREATE_REPLICATION_SLOT);
     var rs = stmt.getResultSet();
     if (rs.next()) {
@@ -65,7 +69,7 @@ public class PostgresSnapshotter extends Snapshotter {
         SET_TRANSACTION_ISOLATION_LEVEL
             + "\n"
             + String.format(SET_TRANSACTION_SNAPSHOT, snapshotInfo.getSnapshotName());
-    log.info("Setting up snapshot transaction with statement: {}", DROP_REPLICATION_SLOT);
+    log.info("Setting up snapshot transaction with statement: {}", setUpTransactionStmt);
     this.jdbcConnection.executeSqlWithoutCommitting(setUpTransactionStmt);
   }
 
@@ -132,7 +136,7 @@ public class PostgresSnapshotter extends Snapshotter {
 
   @Override
   protected void snapshotComplete() throws SQLException {
-    log.info("Dropping replication slot with statement: {}", DROP_REPLICATION_SLOT);
-    jdbcConnection.executeSql(DROP_REPLICATION_SLOT);
+    // log.info("Dropping replication slot with statement: {}", DROP_REPLICATION_SLOT);
+    // jdbcConnection.executeSql(DROP_REPLICATION_SLOT);
   }
 }

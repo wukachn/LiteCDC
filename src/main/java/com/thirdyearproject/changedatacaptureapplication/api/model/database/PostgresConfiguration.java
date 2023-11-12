@@ -2,6 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.api.model.database;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.snapshot.PostgresSnapshotter;
 import com.thirdyearproject.changedatacaptureapplication.engine.snapshot.Snapshotter;
+import com.thirdyearproject.changedatacaptureapplication.engine.streaming.PostgresStreamer;
 import com.thirdyearproject.changedatacaptureapplication.engine.streaming.Streamer;
 import java.util.Set;
 import lombok.Builder;
@@ -30,6 +31,6 @@ public class PostgresConfiguration implements DatabaseConfiguration {
 
   @Override
   public Streamer getStreamer() {
-    return null;
+    return new PostgresStreamer(connectionConfig);
   }
 }
