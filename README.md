@@ -50,3 +50,10 @@ The next steps are to build more of the actual change object with some added met
 
 Created simple kafka application. Can now push and pull change data from kafka. This caused more issues than expected, I had a lot of issues with serialization/deserialization. 
 I was concerned about performance, so I was hesitant to go the json route. I finally got everything working using avro, which should be more performant anyway.
+
+## Week 6 - Week 9
+
+Mainly trying to figure out how I want to handle streaming change events. I had a few issues with schema changes when using schema registry and avro but
+by setting `SCHEMA_REGISTRY_SCHEMA_COMPATIBILITY_LEVEL: "none"` I was able to get around them, for this application, I don't want schema restrictions.
+Took me a while to find this documentation page outlining the structure of the ByteBuffer for each message (https://www.postgresql.org/docs/current/protocol-logicalrep-message-formats.html),
+but I based my solution off of two different GitHub repos (https://github.com/debezium/debezium) and (https://github.com/davyam/pgEasyReplication/tree/master).

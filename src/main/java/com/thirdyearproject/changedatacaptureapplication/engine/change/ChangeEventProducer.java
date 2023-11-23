@@ -6,11 +6,15 @@ import io.confluent.connect.avro.AvroDataConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.kafka.connect.data.SchemaBuilder;
 
 @Slf4j
 public class ChangeEventProducer {
 
+  private static final AvroData CONVERTER =
+      new AvroData(
+          new AvroDataConfig.Builder()
+              .with(AvroDataConfig.CONNECT_META_DATA_CONFIG, false)
+              .build());
   private KafkaProducerService kafkaProducerService;
 
   public ChangeEventProducer(KafkaProducerService kafkaProducerService) {
@@ -18,30 +22,29 @@ public class ChangeEventProducer {
   }
 
   public void sendEvent(ChangeEvent changeEvent) throws JsonMappingException {
-    // TODO: Clean Up
-    AvroData converter =
-        new AvroData(
-            new AvroDataConfig.Builder()
-                // Don't add converter metadata fields to the output.
-                .with(AvroDataConfig.CONNECT_META_DATA_CONFIG, false)
-                .build());
+    var tableIdString = changeEvent.getTableIdString();
+    var genericRecord = convertToGenericRecord(changeEvent);
 
-    var tableIdentifier = (String) changeEvent.getMetadata().get("tableIdentifier");
-    var changeSchema =
-        SchemaBuilder.struct()
-            .field("metadata", changeEvent.getMetadata().schema())
-            .field("after", changeEvent.getAfter().schema())
-            .schema();
-    var schema = converter.fromConnectSchema(changeSchema);
+    kafkaProducerService.sendEvent(genericRecord, tableIdString);
+  }
 
-    GenericRecord avroRecord = new GenericData.Record(schema);
+  private GenericRecord convertToGenericRecord(ChangeEvent changeEvent) {
+    var connectSchema = changeEvent.getSchema();
+    var avroSchema = CONVERTER.fromConnectSchema(connectSchema);
+
+    var genericRecord = new GenericData.Record(avroSchema);
+
     var metadataValue =
-        converter.fromConnectData(changeEvent.getMetadata().schema(), changeEvent.getMetadata());
+        CONVERTER.fromConnectData(changeEvent.getMetadata().schema(), changeEvent.getMetadata());
+    var beforeValue =
+        CONVERTER.fromConnectData(changeEvent.getBefore().schema(), changeEvent.getBefore());
     var afterValue =
-        converter.fromConnectData(changeEvent.getAfter().schema(), changeEvent.getAfter());
-    avroRecord.put("metadata", metadataValue);
-    avroRecord.put("after", afterValue);
+        CONVERTER.fromConnectData(changeEvent.getAfter().schema(), changeEvent.getAfter());
 
-    kafkaProducerService.sendEvent(avroRecord, tableIdentifier);
+    genericRecord.put("metadata", metadataValue);
+    genericRecord.put("before", beforeValue);
+    genericRecord.put("after", afterValue);
+
+    return genericRecord;
   }
 }

@@ -2,116 +2,247 @@
 // https://github.com/debezium/debezium/blob/ef69dbe91c482d4ea505368b3a1a55c40eeb5ffb/debezium-connector-postgres/src/main/java/io/debezium/connector/postgresql/connection/pgoutput/PgOutputMessageDecoder.java#L722
 package com.thirdyearproject.changedatacaptureapplication.engine;
 
-
+import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEvent;
+import com.thirdyearproject.changedatacaptureapplication.engine.temp.Table;
+import com.thirdyearproject.changedatacaptureapplication.engine.temp.TableIdentifier;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.SchemaBuilder;
+import org.apache.kafka.connect.data.Struct;
+import org.postgresql.replication.LogSequenceNumber;
 
 @Slf4j
 public class PgOutputMessageDecoder {
 
   private static final Instant PG_EPOCH =
       LocalDate.of(2000, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
+  private static final Map<Integer, Table> relationIdToTableId = new HashMap();
+  private static final Schema METADATA_SCHEMA =
+      SchemaBuilder.struct()
+          .field("lsn", Schema.INT64_SCHEMA)
+          .field("tableIdentifier", Schema.STRING_SCHEMA)
+          .field("operation", Schema.STRING_SCHEMA)
+          .field("transactionId", Schema.INT64_SCHEMA)
+          .field("transactionCommitTime", Schema.INT64_SCHEMA)
+          .name("metadata")
+          .build();
+  private static final Schema EMPTY_SCHEMA = SchemaBuilder.struct().build();
+  private JdbcConnection jdbcConnection;
+  private Long transactionId;
+  private Instant transactionCommitTime;
 
-  public PgOutputMessageDecoder() {}
+  public PgOutputMessageDecoder(JdbcConnection jdbcConnection) {
+    this.jdbcConnection = jdbcConnection;
+  }
 
-  public static void processNotEmptyMessage(ByteBuffer buffer)
-      throws SQLException, InterruptedException {
+  public Optional<ChangeEvent> processNotEmptyMessage(ByteBuffer buffer, LogSequenceNumber lsn)
+      throws SQLException {
     final MessageType messageType = MessageType.forType((char) buffer.get());
     switch (messageType) {
       case BEGIN:
         handleBeginMessage(buffer);
         break;
-      case COMMIT:
-        handleCommitMessage(buffer);
+      case RELATION:
+        handleRelationMessage(buffer);
         break;
       case INSERT:
-        decodeInsert(buffer);
-        break;
+        return decodeInsert(buffer, lsn);
       case UPDATE:
-        decodeUpdate(buffer);
-        break;
+        return decodeUpdate(buffer, lsn);
       case DELETE:
-        decodeDelete(buffer);
-        break;
+        return decodeDelete(buffer, lsn);
       default:
-        log.info("Message Type {} skipped, not processed.", messageType);
         break;
+    }
+    return Optional.empty();
+  }
+
+  private void handleBeginMessage(ByteBuffer buffer) throws SQLException {
+    var lsn = buffer.getLong();
+    this.transactionCommitTime = PG_EPOCH.plus(buffer.getLong(), ChronoUnit.MICROS);
+    this.transactionId = Integer.toUnsignedLong(buffer.getInt());
+  }
+
+  private void handleRelationMessage(ByteBuffer buffer) throws SQLException {
+    int relationId = buffer.getInt();
+
+    var schemaName = readStringFromBuffer(buffer);
+    var tableName = readStringFromBuffer(buffer);
+    var tableId = TableIdentifier.of(schemaName, tableName);
+    var columns = jdbcConnection.getTableColumns(tableId);
+    var table = Table.builder().tableIdentifier(tableId).columns(columns).build();
+
+    relationIdToTableId.put(relationId, table);
+  }
+
+  private Optional<ChangeEvent> decodeInsert(ByteBuffer buffer, LogSequenceNumber lsn) {
+    int relationId = buffer.getInt();
+    char tupleType = (char) buffer.get();
+
+    var table = relationIdToTableId.get(relationId);
+
+    var metadata = new Struct(METADATA_SCHEMA);
+    metadata.put("lsn", lsn.asLong());
+    metadata.put("tableIdentifier", table.getTableIdentifier().getStringFormat());
+    metadata.put("operation", "create");
+    metadata.put("transactionId", transactionId);
+    metadata.put("transactionCommitTime", transactionCommitTime.getEpochSecond());
+
+    var before = new Struct(EMPTY_SCHEMA);
+
+    var after = buildColumnData(table, buffer);
+
+    var changeEvent = ChangeEvent.builder().metadata(metadata).before(before).after(after).build();
+    return Optional.of(changeEvent);
+  }
+
+  private Optional<ChangeEvent> decodeUpdate(ByteBuffer buffer, LogSequenceNumber lsn) {
+    int relationId = buffer.getInt();
+    char tupleType = (char) buffer.get(); // N or (O or K)
+
+    var table = relationIdToTableId.get(relationId);
+
+    var metadata = new Struct(METADATA_SCHEMA);
+    metadata.put("lsn", lsn.asLong());
+    metadata.put("tableIdentifier", table.getTableIdentifier().getStringFormat());
+    metadata.put("transactionId", transactionId);
+    metadata.put("transactionCommitTime", transactionCommitTime.getEpochSecond());
+    metadata.put("operation", "update");
+
+    Struct before;
+    // Read before values if available. Otherwise, leave before empty.
+    if ('O' == tupleType || 'K' == tupleType) {
+      before = buildColumnData(table, buffer);
+
+      // Increment position
+      tupleType = (char) buffer.get();
+    } else {
+      before = new Struct(EMPTY_SCHEMA);
+    }
+
+    var after = buildColumnData(table, buffer);
+
+    var changeEvent = ChangeEvent.builder().metadata(metadata).before(before).after(after).build();
+
+    return Optional.of(changeEvent);
+  }
+
+  private Optional<ChangeEvent> decodeDelete(ByteBuffer buffer, LogSequenceNumber lsn) {
+    int relationId = buffer.getInt();
+    char tupleType = (char) buffer.get();
+
+    var table = relationIdToTableId.get(relationId);
+
+    var metadata = new Struct(METADATA_SCHEMA);
+    metadata.put("lsn", lsn.asLong());
+    metadata.put("tableIdentifier", table.getTableIdentifier().getStringFormat());
+    metadata.put("transactionId", transactionId);
+    metadata.put("transactionCommitTime", transactionCommitTime.getEpochSecond());
+    metadata.put("operation", "delete");
+
+    var before = buildColumnData(table, buffer);
+
+    var after = new Struct(EMPTY_SCHEMA);
+
+    var changeEvent = ChangeEvent.builder().metadata(metadata).before(before).after(after).build();
+
+    return Optional.of(changeEvent);
+  }
+
+  private Struct buildColumnData(Table table, ByteBuffer buffer) {
+    try {
+      Map<String, Object> tupleMap = (Map<String, Object>) parseTupleData(buffer);
+
+      var values = (String) tupleMap.get("values");
+      var csv = values.substring(1, values.length() - 1);
+      String[] valuesArray = csv.split(",");
+
+      var tableSchema = table.getSchema();
+      var tableFields = tableSchema.fields();
+      var dataStruct = new Struct(tableSchema);
+      var i = 0;
+      for (var field : tableFields) {
+        var name = field.schema().type().getName();
+        if (name.equals("string")) {
+          dataStruct.put(field, valuesArray[i]);
+        } else if (name.equals("float32")) {
+          dataStruct.put(field, Float.valueOf(valuesArray[i]));
+        } else if (name.equals("float64")) {
+          dataStruct.put(field, Double.valueOf(valuesArray[i]));
+        } else if (name.equals("boolean")) {
+          dataStruct.put(field, Boolean.valueOf(valuesArray[i]));
+        } else {
+          dataStruct.put(field, Integer.valueOf(valuesArray[i]));
+        }
+        i++;
+      }
+      return dataStruct;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 
-  /**
-   * Callback handler for the 'B' begin replication message.
-   *
-   * @param buffer The replication stream buffer
-   */
-  private static void handleBeginMessage(ByteBuffer buffer) {
-    final var lsn = buffer.getLong(); // LSN
-    var commitTimestamp = PG_EPOCH.plus(buffer.getLong(), ChronoUnit.MICROS);
-    var transactionId = Integer.toUnsignedLong(buffer.getInt());
-    log.info("Event: {}", MessageType.BEGIN);
-    log.info("Final LSN of transaction: {}", lsn);
-    log.info("Commit timestamp of transaction: {}", commitTimestamp);
-    log.info("XID of transaction: {}", transactionId);
+  // Source:
+  // https://github.com/davyam/pgEasyReplication/blob/master/src/main/java/com/dg/easyReplication/Decode.java#L220
+  public Object parseTupleData(ByteBuffer buffer) throws UnsupportedEncodingException {
+
+    HashMap<String, Object> data = new HashMap<String, Object>();
+    Object result = data;
+
+    String values = "";
+
+    short columns = buffer.getShort(); /* (Int16) Number of columns. */
+
+    for (int i = 0; i < columns; i++) {
+
+      char statusValue = (char) buffer.get(); /*
+       * (Byte1) Either identifies the data as NULL value ('n') or unchanged TOASTed value ('u') or text formatted value ('t').
+       */
+
+      if (i > 0) values += ",";
+
+      if (statusValue == 't') {
+
+        int lenValue = buffer.getInt(); /* (Int32) Length of the column value. */
+
+        buffer.position();
+        byte[] bytes = new byte[lenValue];
+        buffer.get(bytes);
+
+        values += new String(bytes, "UTF-8"); /* (ByteN) The value of the column, in text format. */
+
+      } else {
+        /* statusValue = 'n' (NULL value) or 'u' (unchanged TOASTED value) */
+
+        values = (statusValue == 'n') ? values + "null" : values + "UTOAST";
+      }
+    }
+
+    data.put("numColumns", columns);
+    data.put("values", "(" + values + ")");
+
+    result = data;
+
+    return result;
   }
 
-  /**
-   * Callback handler for the 'C' commit replication message.
-   *
-   * @param buffer The replication stream buffer
-   */
-  private static void handleCommitMessage(ByteBuffer buffer) {
-    int flags = buffer.get(); // flags, currently unused
-    final var lsn = buffer.getLong(); // LSN of the commit
-    final var endLsn = buffer.getLong(); // End LSN of the transaction
-    Instant commitTimestamp = PG_EPOCH.plus(buffer.getLong(), ChronoUnit.MICROS);
-    log.info("Event: {}", MessageType.COMMIT);
-    log.info("Flags: {} (currently unused and most likely 0)", flags);
-    log.info("Commit LSN: {}", lsn);
-    log.info("End LSN of transaction: {}", endLsn);
-    log.info("Commit timestamp of transaction: {}", commitTimestamp);
-  }
-
-  /**
-   * Callback handler for the 'I' insert replication stream message.
-   *
-   * @param buffer The replication stream buffer
-   */
-  private static void decodeInsert(ByteBuffer buffer) {
-    int relationId = buffer.getInt();
-    char tupleType = (char) buffer.get(); // Always 'N" for inserts
-
-    log.info(
-        "Event: {}, Relation Id: {}, Tuple Type: {}", MessageType.INSERT, relationId, tupleType);
-  }
-
-  /**
-   * Callback handler for the 'U' update replication stream message.
-   *
-   * @param buffer The replication stream buffer
-   */
-  private static void decodeUpdate(ByteBuffer buffer) {
-    int relationId = buffer.getInt();
-
-    log.info("Event: {}, RelationId: {}", MessageType.UPDATE, relationId);
-  }
-
-  /**
-   * Callback handler for the 'D' delete replication stream message.
-   *
-   * @param buffer The replication stream buffer
-   */
-  private static void decodeDelete(ByteBuffer buffer) {
-    int relationId = buffer.getInt();
-
-    char tupleType = (char) buffer.get();
-
-    log.info(
-        "Event: {}, RelationId: {}, Tuple Type: {}", MessageType.DELETE, relationId, tupleType);
+  private String readStringFromBuffer(ByteBuffer buffer) {
+    StringBuilder sb = new StringBuilder();
+    byte b = 0;
+    while ((b = buffer.get()) != 0) {
+      sb.append((char) b);
+    }
+    return sb.toString();
   }
 
   public enum MessageType {

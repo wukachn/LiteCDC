@@ -3,20 +3,26 @@ package com.thirdyearproject.changedatacaptureapplication.engine.util;
 import java.sql.Types;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.SchemaBuilder;
 
 @Slf4j
 public class TypeConverter {
-  public static Schema sqlColumnToKafkaConnectType(int sqlColumnType) {
+  public static Schema sqlColumnToKafkaConnectType(int sqlColumnType, boolean isNullable) {
     // Small subset of types for now. TODO: Expand to more types.
-    return switch (sqlColumnType) {
-      case Types.BOOLEAN, Types.BIT -> Schema.BOOLEAN_SCHEMA;
-      case Types.TINYINT -> Schema.INT8_SCHEMA;
-      case Types.SMALLINT -> Schema.INT16_SCHEMA;
-      case Types.INTEGER -> Schema.INT32_SCHEMA;
-      case Types.BIGINT -> Schema.INT64_SCHEMA;
-      case Types.REAL -> Schema.FLOAT32_SCHEMA;
-      case Types.DOUBLE -> Schema.FLOAT64_SCHEMA;
-      default -> Schema.STRING_SCHEMA;
-    };
+    var schemaBuilder =
+        switch (sqlColumnType) {
+          case Types.BOOLEAN, Types.BIT -> SchemaBuilder.bool();
+          case Types.TINYINT -> SchemaBuilder.int8();
+          case Types.SMALLINT -> SchemaBuilder.int16();
+          case Types.INTEGER -> SchemaBuilder.int32();
+          case Types.BIGINT -> SchemaBuilder.int64();
+          case Types.REAL -> SchemaBuilder.float32();
+          case Types.DOUBLE -> SchemaBuilder.float64();
+          default -> SchemaBuilder.string();
+        };
+    if (isNullable) {
+      schemaBuilder = schemaBuilder.optional();
+    }
+    return schemaBuilder.build();
   }
 }

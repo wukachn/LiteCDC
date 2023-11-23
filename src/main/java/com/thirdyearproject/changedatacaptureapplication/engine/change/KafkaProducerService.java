@@ -23,23 +23,25 @@ public class KafkaProducerService {
   }
 
   // Currently using auto.create.topics.enable = true [locally], no need to handle topic creation
-  public void sendEvent(GenericRecord changeEvent, String tableId) {
+  public void sendEvent(GenericRecord genericRecord, String tableId) {
     var topic = String.format("%s.%s", prefix, tableId);
+
     CompletableFuture<SendResult<String, GenericRecord>> future =
-        kafkaTemplate.send(topic, changeEvent);
+        kafkaTemplate.send(topic, genericRecord);
+
     future.whenComplete(
         (result, ex) -> {
           if (ex == null) {
             log.info(
                 "Sent message=["
-                    + changeEvent
+                    + genericRecord
                     + "] with offset=["
                     + result.getRecordMetadata().offset()
                     + "] with topic=["
                     + result.getRecordMetadata().topic()
                     + "]");
           } else {
-            log.error("Unable to send message=[" + changeEvent + "] due to : " + ex.getMessage());
+            log.error("Unable to send message=[" + genericRecord + "] due to : " + ex.getMessage());
           }
         });
   }
