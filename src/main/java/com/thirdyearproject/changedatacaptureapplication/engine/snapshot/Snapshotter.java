@@ -2,27 +2,31 @@ package com.thirdyearproject.changedatacaptureapplication.engine.snapshot;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.connect.data.Schema;
 
 @Slf4j
 public abstract class Snapshotter {
 
   JdbcConnection jdbcConnection;
-  Map<String, Schema> tableSchemaMap;
+  Map<TableIdentifier, List<ColumnDetails>> tableColumnMap;
 
   public Snapshotter(JdbcConnection jdbcConnection) {
     this.jdbcConnection = jdbcConnection;
-    this.tableSchemaMap = new HashMap<>();
+    this.tableColumnMap = new HashMap<>();
   }
 
-  public void snapshot(Set<String> tables, ChangeEventProducer changeEventProducer) {
+  public void snapshot(Set<TableIdentifier> tables, ChangeEventProducer changeEventProducer) {
     log.info(
-        String.format("Starting snapshot on the following tables: %s", String.join(", ", tables)));
+        String.format(
+            "Starting snapshot on the following tables: %s",
+            String.join(", ", tables.stream().map(TableIdentifier::getStringFormat).toList())));
 
     try {
       log.info("Step 1: Setting up start point of snapshot.");
@@ -43,10 +47,10 @@ public abstract class Snapshotter {
 
   protected abstract void createSnapshotEnvironment() throws SQLException;
 
-  protected abstract void captureStructure(Set<String> tables) throws SQLException;
+  protected abstract void captureStructure(Set<TableIdentifier> tables) throws SQLException;
 
   protected abstract void snapshotTables(
-      Set<String> tables, ChangeEventProducer changeEventProducer) throws SQLException;
+      Set<TableIdentifier> tables, ChangeEventProducer changeEventProducer) throws SQLException;
 
   protected abstract void snapshotComplete() throws SQLException;
 }

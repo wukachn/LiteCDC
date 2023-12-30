@@ -1,10 +1,9 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.change;
 
-import io.confluent.kafka.serializers.KafkaAvroDeserializer;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,20 +23,19 @@ public class KafkaConsumerConfig {
   private String bootstrapAddress;
 
   @Bean
-  public ConsumerFactory<String, GenericRecord> consumerFactory() {
+  public ConsumerFactory<String, ChangeEvent> consumerFactory() {
     Map<String, Object> props = new HashMap<>();
     props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapAddress);
     props.put(ConsumerConfig.GROUP_ID_CONFIG, "testgroup");
-    props.put("schema.registry.url", "http://schema-registry:8081");
     props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, KafkaAvroDeserializer.class);
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ChangeEventDeserializer.class);
     return new DefaultKafkaConsumerFactory<>(props);
   }
 
   @Bean
-  public ConcurrentKafkaListenerContainerFactory<String, GenericRecord>
+  public ConcurrentKafkaListenerContainerFactory<String, ChangeEvent>
       kafkaListenerContainerFactory() {
-    ConcurrentKafkaListenerContainerFactory<String, GenericRecord> factory =
+    ConcurrentKafkaListenerContainerFactory<String, ChangeEvent> factory =
         new ConcurrentKafkaListenerContainerFactory<>();
     factory.setConsumerFactory(consumerFactory());
     return factory;

@@ -1,5 +1,6 @@
 package com.thirdyearproject.changedatacaptureapplication.api.model.database;
 
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.engine.snapshot.PostgresSnapshotter;
 import com.thirdyearproject.changedatacaptureapplication.engine.snapshot.Snapshotter;
 import com.thirdyearproject.changedatacaptureapplication.engine.streaming.PostgresStreamer;
@@ -17,10 +18,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PostgresConfiguration implements DatabaseConfiguration {
   @NonNull PostgresConnectionConfiguration connectionConfig;
-  @NonNull Set<String> capturedTables;
+  @NonNull Set<TableIdentifier> capturedTables;
 
   @Override
-  public Set<String> getTables() {
+  public Set<TableIdentifier> getTables() {
     return capturedTables;
   }
 

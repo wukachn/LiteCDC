@@ -2,23 +2,22 @@
 // https://github.com/debezium/debezium/blob/ef69dbe91c482d4ea505368b3a1a55c40eeb5ffb/debezium-connector-postgres/src/main/java/io/debezium/connector/postgresql/connection/pgoutput/PgOutputMessageDecoder.java#L722
 package com.thirdyearproject.changedatacaptureapplication.engine;
 
-import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEvent;
-import com.thirdyearproject.changedatacaptureapplication.engine.temp.Table;
-import com.thirdyearproject.changedatacaptureapplication.engine.temp.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.CRUD;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnWithData;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.PostgresMetadata;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.data.SchemaBuilder;
-import org.apache.kafka.connect.data.Struct;
 import org.postgresql.replication.LogSequenceNumber;
 
 @Slf4j
@@ -26,17 +25,8 @@ public class PgOutputMessageDecoder {
 
   private static final Instant PG_EPOCH =
       LocalDate.of(2000, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
-  private static final Map<Integer, Table> relationIdToTableId = new HashMap();
-  private static final Schema METADATA_SCHEMA =
-      SchemaBuilder.struct()
-          .field("lsn", Schema.INT64_SCHEMA)
-          .field("tableIdentifier", Schema.STRING_SCHEMA)
-          .field("operation", Schema.STRING_SCHEMA)
-          .field("transactionId", Schema.INT64_SCHEMA)
-          .field("transactionCommitTime", Schema.INT64_SCHEMA)
-          .name("metadata")
-          .build();
-  private static final Schema EMPTY_SCHEMA = SchemaBuilder.struct().build();
+  private static final Map<Integer, List<ColumnDetails>> tableColumnMap = new HashMap();
+  private static final Map<Integer, TableIdentifier> relationIdToTableId = new HashMap();
   private JdbcConnection jdbcConnection;
   private Long transactionId;
   private Instant transactionCommitTime;
@@ -75,34 +65,26 @@ public class PgOutputMessageDecoder {
 
   private void handleRelationMessage(ByteBuffer buffer) throws SQLException {
     int relationId = buffer.getInt();
-
     var schemaName = readStringFromBuffer(buffer);
     var tableName = readStringFromBuffer(buffer);
     var tableId = TableIdentifier.of(schemaName, tableName);
     var columns = jdbcConnection.getTableColumns(tableId);
-    var table = Table.builder().tableIdentifier(tableId).columns(columns).build();
 
-    relationIdToTableId.put(relationId, table);
+    tableColumnMap.put(relationId, columns);
+    relationIdToTableId.put(relationId, tableId);
   }
 
   private Optional<ChangeEvent> decodeInsert(ByteBuffer buffer, LogSequenceNumber lsn) {
     int relationId = buffer.getInt();
     char tupleType = (char) buffer.get();
 
-    var table = relationIdToTableId.get(relationId);
+    var tableId = relationIdToTableId.get(relationId);
 
-    var metadata = new Struct(METADATA_SCHEMA);
-    metadata.put("lsn", lsn.asLong());
-    metadata.put("tableIdentifier", table.getTableIdentifier().getStringFormat());
-    metadata.put("operation", "create");
-    metadata.put("transactionId", transactionId);
-    metadata.put("transactionCommitTime", transactionCommitTime.getEpochSecond());
+    var metadata = PostgresMetadata.builder().tableId(tableId).op(CRUD.CREATE).lsn(lsn).build();
 
-    var before = new Struct(EMPTY_SCHEMA);
+    var after = buildColumnData(tableId, buffer);
 
-    var after = buildColumnData(table, buffer);
-
-    var changeEvent = ChangeEvent.builder().metadata(metadata).before(before).after(after).build();
+    var changeEvent = ChangeEvent.builder().metadata(metadata).before(null).after(after).build();
     return Optional.of(changeEvent);
   }
 
@@ -110,27 +92,22 @@ public class PgOutputMessageDecoder {
     int relationId = buffer.getInt();
     char tupleType = (char) buffer.get(); // N or (O or K)
 
-    var table = relationIdToTableId.get(relationId);
+    var tableId = relationIdToTableId.get(relationId);
 
-    var metadata = new Struct(METADATA_SCHEMA);
-    metadata.put("lsn", lsn.asLong());
-    metadata.put("tableIdentifier", table.getTableIdentifier().getStringFormat());
-    metadata.put("transactionId", transactionId);
-    metadata.put("transactionCommitTime", transactionCommitTime.getEpochSecond());
-    metadata.put("operation", "update");
+    var metadata = PostgresMetadata.builder().tableId(tableId).op(CRUD.UPDATE).lsn(lsn).build();
 
-    Struct before;
+    List<ColumnWithData> before;
     // Read before values if available. Otherwise, leave before empty.
     if ('O' == tupleType || 'K' == tupleType) {
-      before = buildColumnData(table, buffer);
+      before = buildColumnData(tableId, buffer);
 
       // Increment position
       tupleType = (char) buffer.get();
     } else {
-      before = new Struct(EMPTY_SCHEMA);
+      before = null;
     }
 
-    var after = buildColumnData(table, buffer);
+    var after = buildColumnData(tableId, buffer);
 
     var changeEvent = ChangeEvent.builder().metadata(metadata).before(before).after(after).build();
 
@@ -141,25 +118,18 @@ public class PgOutputMessageDecoder {
     int relationId = buffer.getInt();
     char tupleType = (char) buffer.get();
 
-    var table = relationIdToTableId.get(relationId);
+    var tableId = relationIdToTableId.get(relationId);
 
-    var metadata = new Struct(METADATA_SCHEMA);
-    metadata.put("lsn", lsn.asLong());
-    metadata.put("tableIdentifier", table.getTableIdentifier().getStringFormat());
-    metadata.put("transactionId", transactionId);
-    metadata.put("transactionCommitTime", transactionCommitTime.getEpochSecond());
-    metadata.put("operation", "delete");
+    var metadata = PostgresMetadata.builder().tableId(tableId).op(CRUD.DELETE).lsn(lsn).build();
 
-    var before = buildColumnData(table, buffer);
+    var before = buildColumnData(tableId, buffer);
 
-    var after = new Struct(EMPTY_SCHEMA);
-
-    var changeEvent = ChangeEvent.builder().metadata(metadata).before(before).after(after).build();
+    var changeEvent = ChangeEvent.builder().metadata(metadata).before(null).after(null).build();
 
     return Optional.of(changeEvent);
   }
 
-  private Struct buildColumnData(Table table, ByteBuffer buffer) {
+  private List<ColumnWithData> buildColumnData(TableIdentifier tableId, ByteBuffer buffer) {
     try {
       Map<String, Object> tupleMap = (Map<String, Object>) parseTupleData(buffer);
 
@@ -167,26 +137,26 @@ public class PgOutputMessageDecoder {
       var csv = values.substring(1, values.length() - 1);
       String[] valuesArray = csv.split(",");
 
-      var tableSchema = table.getSchema();
-      var tableFields = tableSchema.fields();
-      var dataStruct = new Struct(tableSchema);
+      var columnList = new ArrayList<ColumnWithData>();
+
+      var columnDetailsList = tableColumnMap.get(tableId);
       var i = 0;
-      for (var field : tableFields) {
-        var name = field.schema().type().getName();
-        if (name.equals("string")) {
-          dataStruct.put(field, valuesArray[i]);
-        } else if (name.equals("float32")) {
-          dataStruct.put(field, Float.valueOf(valuesArray[i]));
-        } else if (name.equals("float64")) {
-          dataStruct.put(field, Double.valueOf(valuesArray[i]));
-        } else if (name.equals("boolean")) {
-          dataStruct.put(field, Boolean.valueOf(valuesArray[i]));
-        } else {
-          dataStruct.put(field, Integer.valueOf(valuesArray[i]));
+      for (var columnDetails : columnDetailsList) {
+        var type = columnDetails.getSqlType();
+        Object value;
+        switch (type) {
+          case Types.BOOLEAN -> value = Boolean.valueOf(valuesArray[i]);
+          case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIT -> value =
+              Integer.valueOf(valuesArray[i]);
+          case Types.BIGINT -> value = Long.valueOf(valuesArray[i]);
+          case Types.FLOAT -> value = Float.valueOf(valuesArray[i]);
+          case Types.DOUBLE -> value = Double.valueOf(valuesArray[i]);
+          default -> value = String.valueOf(valuesArray[i]);
         }
+        columnList.add(ColumnWithData.builder().details(columnDetails).value(value).build());
         i++;
       }
-      return dataStruct;
+      return columnList;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -194,6 +164,7 @@ public class PgOutputMessageDecoder {
 
   // Source:
   // https://github.com/davyam/pgEasyReplication/blob/master/src/main/java/com/dg/easyReplication/Decode.java#L220
+  // Whole file is heavily inspired by that link and debezium.
   public Object parseTupleData(ByteBuffer buffer) throws UnsupportedEncodingException {
 
     HashMap<String, Object> data = new HashMap<String, Object>();

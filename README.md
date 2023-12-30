@@ -57,3 +57,10 @@ Mainly trying to figure out how I want to handle streaming change events. I had 
 by setting `SCHEMA_REGISTRY_SCHEMA_COMPATIBILITY_LEVEL: "none"` I was able to get around them, for this application, I don't want schema restrictions.
 Took me a while to find this documentation page outlining the structure of the ByteBuffer for each message (https://www.postgresql.org/docs/current/protocol-logicalrep-message-formats.html),
 but I based my solution off of two different GitHub repos (https://github.com/debezium/debezium) and (https://github.com/davyam/pgEasyReplication/tree/master).
+
+---
+
+Decided to switch to using json messages. Avro was causing too many issues and I wasn't happy with my implementation.
+JSON should offer a better understanding when people try the project for the first time, allowing for the actual change data to
+be used in other applications. The addition of the schema registry for avro makes the project harder to quickly pick up. 
+There is much less to set up now.

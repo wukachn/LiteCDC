@@ -3,18 +3,17 @@ package com.thirdyearproject.changedatacaptureapplication.engine.snapshot;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.thirdyearproject.changedatacaptureapplication.api.model.database.ConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
-import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEvent;
-import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
-import com.thirdyearproject.changedatacaptureapplication.engine.util.TypeConverter;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.*;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.CRUD;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnWithData;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.PostgresMetadata;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import java.sql.*;
+import java.util.ArrayList;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.data.SchemaBuilder;
-import org.apache.kafka.connect.data.Struct;
 import org.postgresql.replication.LogSequenceNumber;
 
 @Slf4j
@@ -30,15 +29,7 @@ public class PostgresSnapshotter extends Snapshotter {
       "CREATE PUBLICATION cdc_publication FOR ALL TABLES;";
 
   private static final String SELECT_ALL = "SELECT * FROM %s";
-  private static final Schema METADATA_SCHEMA =
-      SchemaBuilder.struct()
-          .field("lsn", Schema.INT64_SCHEMA)
-          .field("tableIdentifier", Schema.STRING_SCHEMA)
-          .field("operation", Schema.STRING_SCHEMA)
-          .name("metadata")
-          .build();
 
-  private static final Schema BEFORE_SCHEMA = SchemaBuilder.struct().build();
   private PostgresSnapshotInfo snapshotInfo;
 
   /* We need to use a separate connection for the replication slot as "snapshots are tied to the life cycle of their associated transaction."
@@ -80,58 +71,39 @@ public class PostgresSnapshotter extends Snapshotter {
   }
 
   @Override
-  protected void captureStructure(Set<String> tables) throws SQLException {
-    try (var conn = jdbcConnection.getConnection()) {
-      DatabaseMetaData metadata = conn.getMetaData();
-      for (var tableStr : tables) {
-        log.info(String.format("Capturing the structure of the following table: %s", tableStr));
-        var schema = tableStr.split("\\.")[0];
-        var table = tableStr.split("\\.")[1];
+  protected void captureStructure(Set<TableIdentifier> tables) throws SQLException {
+    for (var table : tables) {
+      log.info(
+          String.format(
+              "Capturing the structure of the following table: %s", table.getStringFormat()));
 
-        var structSchemaBuilder = SchemaBuilder.struct().name(tableStr);
-        try (var columnMetadata = metadata.getColumns(null, schema, table, null)) {
-          while (columnMetadata.next()) {
-            var columnName = columnMetadata.getString(4); // COLUMN_NAME
-            var type = columnMetadata.getInt(5); // DATA_TYPE
-            var nullable = columnMetadata.getInt(11); // NULLABLE
-            var isNullable = nullable == ResultSetMetaData.columnNoNulls;
-
-            // TODO: Look into column length, should i be concerned if that data is lost.
-            var fieldSchema = TypeConverter.sqlColumnToKafkaConnectType(type, isNullable);
-            structSchemaBuilder.field(columnName, fieldSchema);
-          }
-          tableSchemaMap.put(tableStr, structSchemaBuilder.build());
-        }
-      }
+      var columns = jdbcConnection.getTableColumns(table);
+      tableColumnMap.put(table, columns);
     }
   }
 
   @Override
-  protected void snapshotTables(Set<String> tables, ChangeEventProducer changeEventProducer)
-      throws SQLException {
+  protected void snapshotTables(
+      Set<TableIdentifier> tables, ChangeEventProducer changeEventProducer) throws SQLException {
     try (var conn = jdbcConnection.getConnection();
         var stmt = conn.createStatement()) {
-      for (var tableStr : tables) {
-        var tableStruct = tableSchemaMap.get(tableStr);
-        var tableColumnFields = tableStruct.fields();
-        var rs = stmt.executeQuery(String.format(SELECT_ALL, tableStr));
+      for (var table : tables) {
+        var columnList = tableColumnMap.get(table);
+        var rs = stmt.executeQuery(String.format(SELECT_ALL, table.getStringFormat()));
         while (rs.next()) {
-          var row = new Struct(tableStruct);
-          for (var field : tableColumnFields) {
-            var fieldName = field.name();
-            var fieldType = field.schema().type();
-            row.put(field, getFromResultSet(rs, fieldName, fieldType));
+          var after = new ArrayList<ColumnWithData>();
+          for (var columnDetails : columnList) {
+            var value = getFromResultSet(rs, columnDetails);
+            after.add(ColumnWithData.builder().details(columnDetails).value(value).build());
           }
-          var metadata = new Struct(METADATA_SCHEMA);
-
-          metadata.put("lsn", snapshotInfo.getWalStartLsn().asLong());
-          metadata.put("tableIdentifier", tableStr);
-          metadata.put("operation", "read");
-
-          var before = new Struct(BEFORE_SCHEMA);
-
+          var metadata =
+              PostgresMetadata.builder()
+                  .lsn(snapshotInfo.getWalStartLsn())
+                  .op(CRUD.READ)
+                  .tableId(table)
+                  .build();
           var changeEvent =
-              ChangeEvent.builder().metadata(metadata).before(before).after(row).build();
+              ChangeEvent.builder().metadata(metadata).before(null).after(after).build();
 
           changeEventProducer.sendEvent(changeEvent);
         }
@@ -144,23 +116,22 @@ public class PostgresSnapshotter extends Snapshotter {
   @Override
   protected void snapshotComplete() throws SQLException {}
 
-  private Object getFromResultSet(ResultSet rs, String fieldName, Schema.Type fieldType)
-      throws SQLException {
-    switch (fieldType) {
-      case BOOLEAN -> {
-        return rs.getBoolean(fieldName);
+  private Object getFromResultSet(ResultSet rs, ColumnDetails columnDetails) throws SQLException {
+    switch (columnDetails.getSqlType()) {
+      case Types.BOOLEAN -> {
+        return rs.getBoolean(columnDetails.getName());
       }
-      case INT8, INT16, INT32 -> {
-        return rs.getInt(fieldName);
+      case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIT -> {
+        return rs.getInt(columnDetails.getName());
       }
-      case INT64 -> {
-        return rs.getLong(fieldName);
+      case Types.BIGINT -> {
+        return rs.getLong(columnDetails.getName());
       }
-      case FLOAT32, FLOAT64 -> {
-        return rs.getFloat(fieldName);
+      case Types.FLOAT, Types.DOUBLE -> {
+        return rs.getFloat(columnDetails.getName());
       }
       default -> {
-        return rs.getString(fieldName);
+        return rs.getString(columnDetails.getName());
       }
     }
   }

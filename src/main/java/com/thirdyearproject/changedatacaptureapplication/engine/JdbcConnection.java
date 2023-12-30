@@ -1,8 +1,8 @@
 package com.thirdyearproject.changedatacaptureapplication.engine;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.database.ConnectionConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.engine.temp.Column;
-import com.thirdyearproject.changedatacaptureapplication.engine.temp.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;
@@ -63,8 +63,9 @@ public class JdbcConnection implements Closeable {
     this.getConnection().setAutoCommit(autoCommit);
   }
 
-  public List<Column> getTableColumns(TableIdentifier tableId) throws SQLException {
-    var columns = new ArrayList<Column>();
+  public List<ColumnDetails> getTableColumns(TableIdentifier tableId) throws SQLException {
+    var columnList = new ArrayList<ColumnDetails>();
+
     var dbMetadata = this.getConnection().getMetaData();
     try (var columnMetadata =
         dbMetadata.getColumns(null, tableId.getSchema(), tableId.getTable(), null)) {
@@ -72,12 +73,13 @@ public class JdbcConnection implements Closeable {
         var columnName = columnMetadata.getString(4);
         var type = columnMetadata.getInt(5);
         var nullable = columnMetadata.getInt(11);
-        var isNullable = nullable == ResultSetMetaData.columnNoNulls;
-        var column = Column.builder().name(columnName).type(type).isNullable(isNullable).build();
-        columns.add(column);
+        var isNullable = nullable != ResultSetMetaData.columnNoNulls;
+        var columnDetails =
+            ColumnDetails.builder().name(columnName).sqlType(type).isNullable(isNullable).build();
+        columnList.add(columnDetails);
       }
     }
-    return columns;
+    return columnList;
   }
 
   @Override

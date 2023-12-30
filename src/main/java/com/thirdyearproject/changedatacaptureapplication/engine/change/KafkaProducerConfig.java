@@ -1,9 +1,8 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.change;
 
-import io.confluent.kafka.serializers.KafkaAvroSerializer;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,12 +22,11 @@ public class KafkaProducerConfig {
   // creating Kafka Producer instances.
   // (https://www.baeldung.com/spring-kafka)
   @Bean
-  public ProducerFactory<String, GenericRecord> producerFactory() {
+  public ProducerFactory<String, ChangeEvent> producerFactory() {
     Map<String, Object> configProps = new HashMap<>();
     configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapAddress);
-    configProps.put("schema.registry.url", "http://schema-registry:8081");
     configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-    configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
+    configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ChangeEventSerializer.class);
     return new DefaultKafkaProducerFactory<>(configProps);
   }
 
@@ -36,7 +34,7 @@ public class KafkaProducerConfig {
   // for sending messages to Kafka topics.
   // (https://www.baeldung.com/spring-kafka)
   @Bean
-  public KafkaTemplate<String, GenericRecord> kafkaTemplate() {
+  public KafkaTemplate<String, ChangeEvent> kafkaTemplate() {
     return new KafkaTemplate<>(producerFactory());
   }
 }

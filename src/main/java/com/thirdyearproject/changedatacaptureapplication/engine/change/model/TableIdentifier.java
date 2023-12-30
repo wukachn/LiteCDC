@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.temp;
+package com.thirdyearproject.changedatacaptureapplication.engine.change.model;
 
 import lombok.Value;
 
