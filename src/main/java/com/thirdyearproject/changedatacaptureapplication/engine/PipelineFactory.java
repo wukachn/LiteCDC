@@ -9,8 +9,8 @@ public class PipelineFactory {
   private final ChangeEventProducer changeEventProducer;
 
   public Pipeline create(PipelineConfiguration config) {
-    var snapshotter = config.getDatabaseConfig().getSnapshotter();
-    var streamer = config.getDatabaseConfig().getStreamer();
+    var snapshotter = config.getSourceConfig().getSnapshotter();
+    var streamer = config.getSourceConfig().getStreamer();
     return Pipeline.builder()
         .pipelineConfiguration(config)
         .snapshotter(snapshotter)

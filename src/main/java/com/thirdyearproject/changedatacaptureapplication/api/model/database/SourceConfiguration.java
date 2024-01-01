@@ -8,8 +8,9 @@ import com.thirdyearproject.changedatacaptureapplication.engine.streaming.Stream
 import java.util.Set;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = PostgresConfiguration.class, name = "postgres")})
-public interface DatabaseConfiguration {
+@JsonSubTypes(
+    value = {@JsonSubTypes.Type(value = PostgresSourceConfiguration.class, name = "postgres")})
+public interface SourceConfiguration {
   Set<TableIdentifier> getTables();
 
   Snapshotter getSnapshotter();

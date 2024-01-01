@@ -17,7 +17,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"databaseConfig\": {\r\n        \"type\": \"postgres\",\r\n        \"connectionConfig\": {\r\n            \"host\": \"postgres\",\r\n            \"port\": 5432,\r\n            \"database\": \"postgres_db\",\r\n            \"user\": \"postgres_user\",\r\n            \"password\": \"postgres_password\"\r\n        },\r\n        \"capturedTables\": [\r\n            {\r\n                \"schema\": \"public\",\r\n                \"table\": \"newtable1\"\r\n            },\r\n            {\r\n                \"schema\": \"public\",\r\n                \"table\": \"newtable2\"\r\n            }\r\n        ]\r\n        ]\r\n    }\r\n}",
+					"raw": "{\r\n    \"sourceConfig\": {\r\n        \"type\": \"postgres\",\r\n        \"connectionConfig\": {\r\n            \"host\": \"postgres\",\r\n            \"port\": 5432,\r\n            \"database\": \"postgres_db\",\r\n            \"user\": \"postgres_user\",\r\n            \"password\": \"postgres_password\"\r\n        },\r\n        \"capturedTables\": [\r\n            {\r\n                \"schema\": \"public\",\r\n                \"table\": \"newtable1\"\r\n            },\r\n            {\r\n                \"schema\": \"public\",\r\n                \"table\": \"newtable2\"\r\n            }\r\n        ]\r\n    },\r\n    \"destinationConfig\": {\r\n        \"type\": \"mysql\",\r\n        \"connectionConfig\": {\r\n            \"host\": \"mysql\",\r\n            \"port\": 5432,\r\n            \"database\": \"mysql\",\r\n            \"user\": \"mysql\",\r\n            \"password\": \"mysql\"\r\n        }\r\n    }\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"

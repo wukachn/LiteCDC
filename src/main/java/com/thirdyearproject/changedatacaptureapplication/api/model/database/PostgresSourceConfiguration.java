@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 @Jacksonized
 @Slf4j
-public class PostgresConfiguration implements DatabaseConfiguration {
+public class PostgresSourceConfiguration implements SourceConfiguration {
   @NonNull PostgresConnectionConfiguration connectionConfig;
   @NonNull Set<TableIdentifier> capturedTables;
 

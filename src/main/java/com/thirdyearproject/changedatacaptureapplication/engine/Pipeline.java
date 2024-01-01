@@ -20,8 +20,7 @@ public class Pipeline implements Closeable, Runnable {
 
   @Override
   public void run() {
-    snapshotter.snapshot(
-        pipelineConfiguration.getDatabaseConfig().getTables(), changeEventProducer);
+    snapshotter.snapshot(pipelineConfiguration.getSourceConfig().getTables(), changeEventProducer);
     streamer.stream(changeEventProducer);
   }
 }
