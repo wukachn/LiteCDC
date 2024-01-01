@@ -82,7 +82,7 @@ public class PgOutputMessageDecoder {
 
     var metadata = PostgresMetadata.builder().tableId(tableId).op(CRUD.CREATE).lsn(lsn).build();
 
-    var after = buildColumnData(tableId, buffer);
+    var after = buildColumnData(relationId, buffer);
 
     var changeEvent = ChangeEvent.builder().metadata(metadata).before(null).after(after).build();
     return Optional.of(changeEvent);
@@ -99,7 +99,7 @@ public class PgOutputMessageDecoder {
     List<ColumnWithData> before;
     // Read before values if available. Otherwise, leave before empty.
     if ('O' == tupleType || 'K' == tupleType) {
-      before = buildColumnData(tableId, buffer);
+      before = buildColumnData(relationId, buffer);
 
       // Increment position
       tupleType = (char) buffer.get();
@@ -107,7 +107,7 @@ public class PgOutputMessageDecoder {
       before = null;
     }
 
-    var after = buildColumnData(tableId, buffer);
+    var after = buildColumnData(relationId, buffer);
 
     var changeEvent = ChangeEvent.builder().metadata(metadata).before(before).after(after).build();
 
@@ -122,14 +122,14 @@ public class PgOutputMessageDecoder {
 
     var metadata = PostgresMetadata.builder().tableId(tableId).op(CRUD.DELETE).lsn(lsn).build();
 
-    var before = buildColumnData(tableId, buffer);
+    var before = buildColumnData(relationId, buffer);
 
     var changeEvent = ChangeEvent.builder().metadata(metadata).before(null).after(null).build();
 
     return Optional.of(changeEvent);
   }
 
-  private List<ColumnWithData> buildColumnData(TableIdentifier tableId, ByteBuffer buffer) {
+  private List<ColumnWithData> buildColumnData(Integer relationId, ByteBuffer buffer) {
     try {
       Map<String, Object> tupleMap = (Map<String, Object>) parseTupleData(buffer);
 
@@ -139,7 +139,7 @@ public class PgOutputMessageDecoder {
 
       var columnList = new ArrayList<ColumnWithData>();
 
-      var columnDetailsList = tableColumnMap.get(tableId);
+      var columnDetailsList = tableColumnMap.get(relationId);
       var i = 0;
       for (var columnDetails : columnDetailsList) {
         var type = columnDetails.getSqlType();

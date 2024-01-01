@@ -14,6 +14,7 @@ import org.springframework.lang.Nullable;
 @Builder
 @EqualsAndHashCode
 public class PipelineConfiguration {
+  @NonNull KafkaConfiguration kafkaConfig;
   @NonNull SourceConfiguration sourceConfig;
   @Nullable DestinationConfiguration destinationConfig;
 }
