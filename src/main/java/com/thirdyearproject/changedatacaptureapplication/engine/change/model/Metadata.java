@@ -7,4 +7,6 @@ import lombok.experimental.SuperBuilder;
 public abstract class Metadata {
   @Getter private TableIdentifier tableId;
   @Getter private CRUD op;
+
+  public abstract String getOffset();
 }

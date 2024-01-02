@@ -2,7 +2,7 @@
 
 Run the App
 1. `mvn clean install`
-2. `docker-compose --profile local-postgres up --build` (local postgres test db)
+2. `docker-compose --profile local-postgres --profile local-mysql up --build` (with test postgres and mysql dbs)
 
 Lucid Chart: https://lucid.app/lucidchart/b21cdc93-e535-4cff-abe6-6bfbcc1910bc/edit?invitationId=inv_6d264c25-5c45-4cff-81c6-cb8350444901
 

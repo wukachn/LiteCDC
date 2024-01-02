@@ -1,19 +1,26 @@
 package com.thirdyearproject.changedatacaptureapplication.api.model.database;
 
 import java.util.Properties;
+import lombok.Builder;
 import lombok.NonNull;
+import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
+import lombok.extern.slf4j.Slf4j;
 
+@Value
+@Builder
+@Jacksonized
+@Slf4j
 public class MySqlConnectionConfiguration implements ConnectionConfiguration {
 
   @NonNull String host;
   @NonNull Integer port;
-  @NonNull String database;
   @NonNull String user;
   @NonNull String password;
 
   @Override
   public String getJdbcUrl() {
-    return "jdbc:mysql://" + host + ":" + port + "/" + database;
+    return "jdbc:mysql://" + host + ":" + port;
   }
 
   @Override
@@ -21,6 +28,12 @@ public class MySqlConnectionConfiguration implements ConnectionConfiguration {
     var properties = new Properties();
     properties.setProperty("user", user);
     properties.setProperty("password", password);
+    properties.setProperty("allowMultiQueries", "true");
+
+    // Needed for current local set up. TODO: remove these and just add jdbc props to request.
+    properties.setProperty("allowPublicKeyRetrieval", "true");
+    properties.setProperty("useSSL", "false");
+
     return properties;
   }
 }

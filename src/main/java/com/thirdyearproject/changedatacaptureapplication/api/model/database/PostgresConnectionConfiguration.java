@@ -31,6 +31,7 @@ public class PostgresConnectionConfiguration implements ConnectionConfiguration 
     var properties = new Properties();
     properties.setProperty("user", user);
     properties.setProperty("password", password);
+    properties.setProperty("allowMultiQueries", "true");
     properties.setProperty("replication", "database");
     properties.setProperty("preferQueryMode", "simple");
     // Exported snapshots Minimum Version: Postgres 9.4+

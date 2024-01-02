@@ -5,6 +5,8 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Tab
 import java.util.Collections;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -50,10 +52,12 @@ public class ChangeDataConsumer implements Runnable {
     consumer.subscribe(Collections.singletonList(prefix + "." + table.getStringFormat()));
     try {
       while (true) {
-        ConsumerRecords<String, ChangeEvent> records = consumer.poll(100);
-        for (ConsumerRecord<String, ChangeEvent> record : records) {
-          eventProcessor.process(record.value());
-        }
+        ConsumerRecords<String, ChangeEvent> consumerRecords = consumer.poll(100);
+        var changeEvents =
+            StreamSupport.stream(consumerRecords.spliterator(), false)
+                .map(ConsumerRecord::value)
+                .collect(Collectors.toUnmodifiableSet());
+        eventProcessor.process(changeEvents);
       }
     } catch (Exception e) {
       log.error("Consumer Error.", e);

@@ -51,3 +51,17 @@ services:
       - ./testing/setup_postgres.sql:/docker-entrypoint-initdb.d/setup_postgres.sql
     profiles:
       - local-postgres
+
+  mysql:
+    image: mysql:latest
+    ports:
+      - "3306:3306"
+    environment:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_DATABASE: mysql_db
+        MYSQL_USER: mysql_user
+        MYSQL_PASSWORD: mysql_password
+    volumes:
+        - ./testing/setup_mysql.sql:/docker-entrypoint-initdb.d/setup_mysql.sql
+    profiles:
+      - local-mysql
