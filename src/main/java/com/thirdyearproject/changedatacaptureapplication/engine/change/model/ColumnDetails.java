@@ -11,4 +11,5 @@ public class ColumnDetails {
   String name;
   int sqlType;
   boolean isNullable;
+  boolean isPrimaryKey;
 }

@@ -10,7 +10,9 @@ import java.sql.DriverManager;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.core.BaseConnection;
 import org.postgresql.replication.PGReplicationStream;
@@ -68,14 +70,28 @@ public class JdbcConnection implements Closeable {
 
     var dbMetadata = this.getConnection().getMetaData();
     try (var columnMetadata =
-        dbMetadata.getColumns(null, tableId.getSchema(), tableId.getTable(), null)) {
+            dbMetadata.getColumns(null, tableId.getSchema(), tableId.getTable(), null);
+        var primaryKeyInfo =
+            dbMetadata.getPrimaryKeys(null, tableId.getSchema(), tableId.getTable())) {
+
+      Set<String> primaryKeyColumns = new HashSet<>();
+      while (primaryKeyInfo.next()) {
+        primaryKeyColumns.add(primaryKeyInfo.getString("COLUMN_NAME"));
+      }
+
       while (columnMetadata.next()) {
         var columnName = columnMetadata.getString(4);
         var type = columnMetadata.getInt(5);
         var nullable = columnMetadata.getInt(11);
         var isNullable = nullable != ResultSetMetaData.columnNoNulls;
+        var isPrimaryKey = primaryKeyColumns.contains(columnName);
         var columnDetails =
-            ColumnDetails.builder().name(columnName).sqlType(type).isNullable(isNullable).build();
+            ColumnDetails.builder()
+                .name(columnName)
+                .sqlType(type)
+                .isNullable(isNullable)
+                .isPrimaryKey(isPrimaryKey)
+                .build();
         columnList.add(columnDetails);
       }
     }
