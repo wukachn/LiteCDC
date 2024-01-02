@@ -25,7 +25,9 @@ public class Pipeline implements Closeable, Runnable {
     if (pipelineConfiguration.getDestinationConfig() != null) {
       var bootstrapServer = pipelineConfiguration.getKafkaConfig().getBootstrapServer();
       var prefix = pipelineConfiguration.getKafkaConfig().getPrefix();
-      KafkaConsumerManager.createConsumers(bootstrapServer, prefix, tables);
+      var eventProcessor =
+          pipelineConfiguration.getDestinationConfig().createChangeEventProcessor();
+      KafkaConsumerManager.createConsumers(bootstrapServer, prefix, tables, eventProcessor);
     }
     snapshotter.snapshot(tables, changeEventProducer);
     streamer.stream(changeEventProducer);

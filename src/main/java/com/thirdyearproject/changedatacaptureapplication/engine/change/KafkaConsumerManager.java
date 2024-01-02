@@ -16,11 +16,14 @@ public class KafkaConsumerManager {
   private static ExecutorService executor = Executors.newFixedThreadPool(10);
 
   public static void createConsumers(
-      String bootstrapServer, String prefix, Set<TableIdentifier> tables) {
+      String bootstrapServer,
+      String prefix,
+      Set<TableIdentifier> tables,
+      ChangeEventProcessor eventProcessor) {
     createTopicsIfNotExists(bootstrapServer, prefix, tables);
     for (var table : tables) {
       // TODO: Can this handle lots of tables?
-      executor.submit(new ChangeDataConsumer(bootstrapServer, prefix, table));
+      executor.submit(new ChangeDataConsumer(bootstrapServer, prefix, table, eventProcessor));
     }
   }
 

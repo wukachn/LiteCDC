@@ -18,11 +18,17 @@ public class ChangeDataConsumer implements Runnable {
   private KafkaConsumer<String, ChangeEvent> consumer;
   private String prefix;
   private TableIdentifier table;
+  private ChangeEventProcessor eventProcessor;
 
-  public ChangeDataConsumer(String bootstrapServer, String prefix, TableIdentifier table) {
+  public ChangeDataConsumer(
+      String bootstrapServer,
+      String prefix,
+      TableIdentifier table,
+      ChangeEventProcessor eventProcessor) {
     this.consumer = createConsumer(bootstrapServer, table);
     this.prefix = prefix;
     this.table = table;
+    this.eventProcessor = eventProcessor;
   }
 
   private KafkaConsumer<String, ChangeEvent> createConsumer(
@@ -46,7 +52,7 @@ public class ChangeDataConsumer implements Runnable {
       while (true) {
         ConsumerRecords<String, ChangeEvent> records = consumer.poll(100);
         for (ConsumerRecord<String, ChangeEvent> record : records) {
-          log.info(String.valueOf(record.value()));
+          eventProcessor.process(record.value());
         }
       }
     } catch (Exception e) {
