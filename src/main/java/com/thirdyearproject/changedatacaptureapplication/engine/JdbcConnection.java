@@ -85,12 +85,14 @@ public class JdbcConnection implements Closeable {
         var nullable = columnMetadata.getInt(11);
         var isNullable = nullable != ResultSetMetaData.columnNoNulls;
         var isPrimaryKey = primaryKeyColumns.contains(columnName);
+        var size = columnMetadata.getInt("COLUMN_SIZE");
         var columnDetails =
             ColumnDetails.builder()
                 .name(columnName)
                 .sqlType(type)
                 .isNullable(isNullable)
                 .isPrimaryKey(isPrimaryKey)
+                .size(size)
                 .build();
         columnList.add(columnDetails);
       }

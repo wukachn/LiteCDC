@@ -10,7 +10,7 @@ public class PostgresMetadata extends Metadata {
   @Getter private LogSequenceNumber lsn;
 
   @Override
-  public String getOffset() {
-    return String.valueOf(lsn.asLong());
+  public Long getOffset() {
+    return lsn.asLong();
   }
 }

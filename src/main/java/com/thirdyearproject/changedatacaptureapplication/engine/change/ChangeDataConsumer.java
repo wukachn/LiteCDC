@@ -3,9 +3,9 @@ package com.thirdyearproject.changedatacaptureapplication.engine.change;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -53,10 +53,10 @@ public class ChangeDataConsumer implements Runnable {
     try {
       while (true) {
         ConsumerRecords<String, ChangeEvent> consumerRecords = consumer.poll(100);
-        var changeEvents =
+        List<ChangeEvent> changeEvents =
             StreamSupport.stream(consumerRecords.spliterator(), false)
                 .map(ConsumerRecord::value)
-                .collect(Collectors.toUnmodifiableSet());
+                .toList();
         eventProcessor.process(changeEvents);
       }
     } catch (Exception e) {
