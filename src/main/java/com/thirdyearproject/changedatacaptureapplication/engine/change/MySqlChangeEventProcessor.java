@@ -22,13 +22,14 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
 
   @Override
   public void process(List<ChangeEvent> changeEvents) {
-    // For now, lets always override the destination record. Ignoring offset.
     if (changeEvents.size() == 0) {
       return;
     }
 
     createDatabasesIfNotExists(changeEvents);
     createTablesIfNotExists(changeEvents);
+
+    // Each row gets updated only when the new_offset > old_offset.
     deliverChanges(changeEvents);
   }
 
@@ -141,8 +142,8 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
             .map(
                 column ->
                     String.format(
-                        "%s = VALUES(%s)",
-                        column.getDetails().getName(), column.getDetails().getName()))
+                        "%s = IF(VALUES(cdc_last_updated) > cdc_last_updated, VALUES(%s), %s)",
+                        column.getDetails().getName(), column.getDetails().getName(), column.getDetails().getName()))
             .toList();
     var updateDetailsCSV =
         String.format(
