@@ -17,17 +17,17 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 public class ChangeDataConsumer implements Runnable {
 
   private KafkaConsumer<String, ChangeEvent> consumer;
-  private String prefix;
+  private String topicPrefix;
   private List<TableIdentifier> tables;
   private ChangeEventProcessor eventProcessor;
 
   public ChangeDataConsumer(
       String bootstrapServer,
-      String prefix,
+      String topicPrefix,
       List<TableIdentifier> tables,
       ChangeEventProcessor eventProcessor) {
     this.consumer = createConsumer(bootstrapServer, tables);
-    this.prefix = prefix;
+    this.topicPrefix = topicPrefix;
     this.tables = tables;
     this.eventProcessor = eventProcessor;
   }
@@ -48,7 +48,7 @@ public class ChangeDataConsumer implements Runnable {
 
   @Override
   public void run() {
-    var topics = tables.stream().map(table -> prefix + "." + table.getStringFormat()).toList();
+    var topics = tables.stream().map(table -> topicPrefix + "." + table.getStringFormat()).toList();
     consumer.subscribe(topics);
     try {
       while (true) {

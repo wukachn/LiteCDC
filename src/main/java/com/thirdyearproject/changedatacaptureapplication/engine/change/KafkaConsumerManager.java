@@ -18,28 +18,28 @@ public class KafkaConsumerManager {
 
   public static void createConsumers(
       String bootstrapServer,
-      String prefix,
+      String topicPrefix,
       Set<TableIdentifier> tables,
       ChangeEventProcessor eventProcessor) {
-    createTopicsIfNotExists(bootstrapServer, prefix, tables);
+    createTopicsIfNotExists(bootstrapServer, topicPrefix, tables);
     var groupedBySchema =
         tables.stream().collect(Collectors.groupingBy(TableIdentifier::getSchema)).values().stream()
             .toList();
     for (var schemaTables : groupedBySchema) {
       // Consumer per Schema.
       executor.submit(
-          new ChangeDataConsumer(bootstrapServer, prefix, schemaTables, eventProcessor));
+          new ChangeDataConsumer(bootstrapServer, topicPrefix, schemaTables, eventProcessor));
     }
   }
 
   private static void createTopicsIfNotExists(
-      String bootstrapServer, String prefix, Set<TableIdentifier> tables) {
+      String bootstrapServer, String topicPrefix, Set<TableIdentifier> tables) {
     Properties adminProps = new Properties();
     adminProps.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
 
     try (AdminClient adminClient = AdminClient.create(adminProps)) {
       for (var table : tables) {
-        var topicName = prefix + "." + table.getStringFormat();
+        var topicName = topicPrefix + "." + table.getStringFormat();
         boolean topicExists = adminClient.listTopics().names().get().contains(topicName);
         if (!topicExists) {
           // TODO: Probably use different defaults...

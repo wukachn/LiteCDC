@@ -10,6 +10,6 @@ import lombok.extern.jackson.Jacksonized;
 @Builder
 public class KafkaConfiguration {
   // TODO: Need to change remove these references in application.yml (how producer is created)
-  @NonNull String prefix;
+  @NonNull String topicPrefix;
   @NonNull String bootstrapServer;
 }
