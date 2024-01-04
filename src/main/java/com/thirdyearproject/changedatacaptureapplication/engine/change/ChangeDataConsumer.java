@@ -2,7 +2,6 @@ package com.thirdyearproject.changedatacaptureapplication.engine.change;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
-import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -19,28 +18,28 @@ public class ChangeDataConsumer implements Runnable {
 
   private KafkaConsumer<String, ChangeEvent> consumer;
   private String prefix;
-  private TableIdentifier table;
+  private List<TableIdentifier> tables;
   private ChangeEventProcessor eventProcessor;
 
   public ChangeDataConsumer(
       String bootstrapServer,
       String prefix,
-      TableIdentifier table,
+      List<TableIdentifier> tables,
       ChangeEventProcessor eventProcessor) {
-    this.consumer = createConsumer(bootstrapServer, table);
+    this.consumer = createConsumer(bootstrapServer, tables);
     this.prefix = prefix;
-    this.table = table;
+    this.tables = tables;
     this.eventProcessor = eventProcessor;
   }
 
   private KafkaConsumer<String, ChangeEvent> createConsumer(
-      String bootstrapServer, TableIdentifier table) {
+      String bootstrapServer, List<TableIdentifier> tables) {
     Properties properties = new Properties();
     properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
     properties.put(
         ConsumerConfig.GROUP_INSTANCE_ID_CONFIG,
-        "cdc_" + table.getStringFormat() + UUID.randomUUID());
-    properties.put(ConsumerConfig.GROUP_ID_CONFIG, "cdc_" + table.getStringFormat());
+        "cdc_" + tables.get(0).getSchema() + UUID.randomUUID());
+    properties.put(ConsumerConfig.GROUP_ID_CONFIG, "cdc_" + tables.get(0).getSchema());
     properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
     properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ChangeEventDeserializer.class);
     properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
@@ -49,7 +48,8 @@ public class ChangeDataConsumer implements Runnable {
 
   @Override
   public void run() {
-    consumer.subscribe(Collections.singletonList(prefix + "." + table.getStringFormat()));
+    var topics = tables.stream().map(table -> prefix + "." + table.getStringFormat()).toList();
+    consumer.subscribe(topics);
     try {
       while (true) {
         ConsumerRecords<String, ChangeEvent> consumerRecords = consumer.poll(100);

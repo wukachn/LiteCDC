@@ -143,7 +143,9 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
                 column ->
                     String.format(
                         "%s = IF(VALUES(cdc_last_updated) > cdc_last_updated, VALUES(%s), %s)",
-                        column.getDetails().getName(), column.getDetails().getName(), column.getDetails().getName()))
+                        column.getDetails().getName(),
+                        column.getDetails().getName(),
+                        column.getDetails().getName()))
             .toList();
     var updateDetailsCSV =
         String.format(
