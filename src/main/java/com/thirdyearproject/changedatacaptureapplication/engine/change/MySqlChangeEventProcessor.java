@@ -4,8 +4,9 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.database.MySq
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
+import com.thirdyearproject.changedatacaptureapplication.util.TypeUtils;
 import java.sql.SQLException;
-import java.sql.Types;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -22,9 +23,11 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
 
   @Override
   public void process(List<ChangeEvent> changeEvents) {
-    if (changeEvents.size() == 0) {
+    if (changeEvents.isEmpty()) {
       return;
     }
+
+    Collections.sort(changeEvents);
 
     createDatabasesIfNotExists(changeEvents);
     createTablesIfNotExists(changeEvents);
@@ -78,7 +81,7 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
             .collect(
                 Collectors.groupingBy(
                     event -> event.getMetadata().getTableId().getStringFormat(),
-                    Collectors.maxBy(
+                    Collectors.minBy(
                         Comparator.comparingLong(event -> event.getMetadata().getOffset()))))
             .values()
             .stream()
@@ -110,7 +113,7 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
 
   private String buildCreateTableColumnString(ColumnDetails details) {
     var columnName = details.getName();
-    var columnType = convertSqlTypeToString(details.getSqlType(), details.getSize());
+    var columnType = TypeUtils.convertSqlTypeToString(details.getSqlType(), details.getSize());
     var primaryKey = details.isPrimaryKey() ? "PRIMARY KEY" : "";
     return String.format("%s %s %s", columnName, columnType, primaryKey);
   }
@@ -162,37 +165,5 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
       return "\"" + value + "\"";
     }
     return String.valueOf(value);
-  }
-
-  private String convertSqlTypeToString(int type, int size) {
-    switch (type) {
-      case Types.BOOLEAN -> {
-        return "BOOLEAN";
-      }
-      case Types.TINYINT -> {
-        return String.format("TINYINT(%s)", size);
-      }
-      case Types.SMALLINT -> {
-        return String.format("SMALLINT(%s)", size);
-      }
-      case Types.INTEGER -> {
-        return String.format("INT(%s)", size);
-      }
-      case Types.BIT -> {
-        return String.format("BIT(%s)", size);
-      }
-      case Types.BIGINT -> {
-        return String.format("BIGINT(%s)", size);
-      }
-      case Types.FLOAT -> {
-        return String.format("FLOAT(%s)", size);
-      }
-      case Types.DOUBLE -> {
-        return String.format("DOUBLE(%s)", size);
-      }
-      default -> {
-        return String.format("VARCHAR(%s)", size);
-      }
-    }
   }
 }
