@@ -8,6 +8,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Col
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnWithData;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.PostgresMetadata;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.util.PostgresTypeUtils;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.sql.ResultSetMetaData;
@@ -18,8 +19,6 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-
-import com.thirdyearproject.changedatacaptureapplication.util.PostgresTypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.replication.LogSequenceNumber;
 
@@ -88,17 +87,20 @@ public class PgOutputMessageDecoder {
 
       var rsCol = metadata.getColumns(null, schemaName, tableName, null);
       while (rsCol.next()) {
-          var columnName = rsCol.getString(4);
-          var jdbcNullable = rsCol.getInt(11);
-          var isNullable = jdbcNullable == ResultSetMetaData.columnNullable || jdbcNullable == ResultSetMetaData.columnNullableUnknown;
-          var size = rsCol.getInt(7);
+        var columnName = rsCol.getString(4);
+        var jdbcNullable = rsCol.getInt(11);
+        var isNullable =
+            jdbcNullable == ResultSetMetaData.columnNullable
+                || jdbcNullable == ResultSetMetaData.columnNullableUnknown;
+        var size = rsCol.getInt(7);
 
-          columnMetadata.put(columnName, PgOutputColumnMetadata.builder().isNullable(isNullable).size(size).build());
+        columnMetadata.put(
+            columnName, PgOutputColumnMetadata.builder().isNullable(isNullable).size(size).build());
       }
     }
 
     List<ColumnDetails> columns = new ArrayList<>();
-    for (var i = 0; i < columnCount; i ++) {
+    for (var i = 0; i < columnCount; i++) {
       byte flags = buffer.get();
       var name = readStringFromBuffer(buffer);
       var oid = buffer.getInt();
@@ -111,7 +113,14 @@ public class PgOutputMessageDecoder {
       var isNullable = metadata.isNullable();
       var isPrimaryKey = primaryKeys.contains(name);
 
-      columns.add(ColumnDetails.builder().name(name).sqlType(type).size(size).isNullable(isNullable).isPrimaryKey(isPrimaryKey).build());
+      columns.add(
+          ColumnDetails.builder()
+              .name(name)
+              .sqlType(type)
+              .size(size)
+              .isNullable(isNullable)
+              .isPrimaryKey(isPrimaryKey)
+              .build());
     }
 
     tableColumnMap.put(relationId, columns);

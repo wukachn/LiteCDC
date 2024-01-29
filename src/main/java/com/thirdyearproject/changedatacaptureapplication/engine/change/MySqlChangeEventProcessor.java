@@ -13,11 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MySqlChangeEventProcessor implements ChangeEventProcessor {
-  private JdbcConnection jdbcConnection;
-  private Map<TableIdentifier, List<ColumnDetails>> columnDetailsMap;
   private static String ADD_COLUMN = "ALTER TABLE %s ADD COLUMN %s %s;";
   private static String DROP_COLUMN = "ALTER TABLE %s DROP COLUMN %s;";
   private static String ALTER_COLUMN = "ALTER TABLE %s MODIFY %s %s %s;";
+  private JdbcConnection jdbcConnection;
+  private Map<TableIdentifier, List<ColumnDetails>> columnDetailsMap;
 
   public MySqlChangeEventProcessor(MySqlConnectionConfiguration connectionConfig) {
     this.jdbcConnection = new JdbcConnection(connectionConfig);
@@ -128,7 +128,8 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
       var afterDetails = changeEvent.getAfterColumnDetails();
       if (columnDetailsMap.containsKey(tableId)) {
         var beforeDetails = columnDetailsMap.get(tableId);
-        var possibleAlterTableSql = compareAndBuildAlterTableSql(tableId, beforeDetails, afterDetails);
+        var possibleAlterTableSql =
+            compareAndBuildAlterTableSql(tableId, beforeDetails, afterDetails);
         sqlBuilder.append(possibleAlterTableSql);
       } else {
         columnDetailsMap.put(tableId, afterDetails);
@@ -139,27 +140,52 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
   }
 
   // No support for column renaming.
-  private String compareAndBuildAlterTableSql(TableIdentifier tableIdentifier, List<ColumnDetails> beforeDetails, List<ColumnDetails> afterDetails) {
+  private String compareAndBuildAlterTableSql(
+      TableIdentifier tableIdentifier,
+      List<ColumnDetails> beforeDetails,
+      List<ColumnDetails> afterDetails) {
     var sqlBuilder = new StringBuilder();
 
     // Check for deleted columns.
     for (var beforeCol : beforeDetails) {
-      var noLongerPresent = afterDetails.stream().noneMatch(afterCol -> afterCol.getName().equals(beforeCol.getName()));
+      var noLongerPresent =
+          afterDetails.stream()
+              .noneMatch(afterCol -> afterCol.getName().equals(beforeCol.getName()));
       if (noLongerPresent) {
-        sqlBuilder.append(String.format(DROP_COLUMN, String.format("cdc_%s", tableIdentifier.getStringFormat()), beforeCol.getName()));
+        sqlBuilder.append(
+            String.format(
+                DROP_COLUMN,
+                String.format("cdc_%s", tableIdentifier.getStringFormat()),
+                beforeCol.getName()));
       }
     }
 
     // Check for new columns and changes.
     for (var afterCol : afterDetails) {
-      var optionalBeforeCol = beforeDetails.stream().filter(col -> col.getName().equals(afterCol.getName())).findFirst();
+      var optionalBeforeCol =
+          beforeDetails.stream()
+              .filter(col -> col.getName().equals(afterCol.getName()))
+              .findFirst();
       if (optionalBeforeCol.isEmpty()) {
-        sqlBuilder.append(String.format(ADD_COLUMN, String.format("cdc_%s", tableIdentifier.getStringFormat()), afterCol.getName(), MySqlTypeUtils.convertSqlTypeToString(afterCol.getSqlType(), afterCol.getSize())));
+        sqlBuilder.append(
+            String.format(
+                ADD_COLUMN,
+                String.format("cdc_%s", tableIdentifier.getStringFormat()),
+                afterCol.getName(),
+                MySqlTypeUtils.convertSqlTypeToString(afterCol.getSqlType(), afterCol.getSize())));
         continue;
       }
       var beforeCol = optionalBeforeCol.get();
-      if (beforeCol.getSqlType() != afterCol.getSqlType() || beforeCol.getSize() != afterCol.getSize() || beforeCol.isNullable() != afterCol.isNullable()) {
-        sqlBuilder.append(String.format(ALTER_COLUMN, String.format("cdc_%s", tableIdentifier.getStringFormat()), afterCol.getName(), MySqlTypeUtils.convertSqlTypeToString(afterCol.getSqlType(), afterCol.getSize()), MySqlTypeUtils.convertNullableBooleanToString(afterCol.isNullable())));
+      if (beforeCol.getSqlType() != afterCol.getSqlType()
+          || beforeCol.getSize() != afterCol.getSize()
+          || beforeCol.isNullable() != afterCol.isNullable()) {
+        sqlBuilder.append(
+            String.format(
+                ALTER_COLUMN,
+                String.format("cdc_%s", tableIdentifier.getStringFormat()),
+                afterCol.getName(),
+                MySqlTypeUtils.convertSqlTypeToString(afterCol.getSqlType(), afterCol.getSize()),
+                MySqlTypeUtils.convertNullableBooleanToString(afterCol.isNullable())));
       }
     }
 

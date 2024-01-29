@@ -26,7 +26,7 @@ public class ChangeEvent implements Comparable<ChangeEvent> {
     if (after == null) {
       return columnDetails;
     }
-    for (var afterCol: after) {
+    for (var afterCol : after) {
       columnDetails.add(afterCol.getDetails());
     }
     return columnDetails;

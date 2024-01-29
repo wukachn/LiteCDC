@@ -6,6 +6,6 @@ import lombok.Value;
 @Value
 @Builder
 public class PgOutputColumnMetadata {
-    boolean isNullable;
-    int size;
+  boolean isNullable;
+  int size;
 }

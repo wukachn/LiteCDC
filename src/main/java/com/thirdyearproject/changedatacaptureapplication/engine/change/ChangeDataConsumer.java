@@ -56,7 +56,8 @@ public class ChangeDataConsumer implements Runnable {
         ConsumerRecords<String, ChangeEvent> consumerRecords = consumer.poll(100);
         List<ChangeEvent> changeEvents =
             StreamSupport.stream(consumerRecords.spliterator(), false)
-                .map(ConsumerRecord::value).collect(Collectors.toList());
+                .map(ConsumerRecord::value)
+                .collect(Collectors.toList());
         eventProcessor.process(changeEvents);
       }
     } catch (Exception e) {
