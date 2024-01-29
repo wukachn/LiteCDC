@@ -4,21 +4,23 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.database.MySq
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.util.TypeUtils;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MySqlChangeEventProcessor implements ChangeEventProcessor {
   private JdbcConnection jdbcConnection;
+  private Map<TableIdentifier, List<ColumnDetails>> columnDetailsMap;
+  private static String ADD_COLUMN = "ALTER TABLE %s ADD COLUMN %s %s;";
+  private static String DROP_COLUMN = "ALTER TABLE %s DROP COLUMN %s;";
 
   public MySqlChangeEventProcessor(MySqlConnectionConfiguration connectionConfig) {
     this.jdbcConnection = new JdbcConnection(connectionConfig);
+    this.columnDetailsMap = new HashMap<>();
   }
 
   @Override
@@ -55,7 +57,7 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
   }
 
   private void deliverChanges(List<ChangeEvent> changeEvents) {
-    var updateSql = buildAllIdempotentUpdates(changeEvents);
+    var updateSql = buildUpdates(changeEvents);
     try (var stmt = jdbcConnection.getConnection().createStatement()) {
       stmt.execute(updateSql);
     } catch (SQLException e) {
@@ -118,11 +120,41 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
     return String.format("%s %s %s", columnName, columnType, primaryKey);
   }
 
-  private String buildAllIdempotentUpdates(List<ChangeEvent> changeEvents) {
+  private String buildUpdates(List<ChangeEvent> changeEvents) {
     var sqlBuilder = new StringBuilder();
     for (var changeEvent : changeEvents) {
+      var tableId = changeEvent.getMetadata().getTableId();
+      var afterDetails = changeEvent.getAfterColumnDetails();
+      if (columnDetailsMap.containsKey(tableId)) {
+        var beforeDetails = columnDetailsMap.get(tableId);
+        var possibleAlterTableSql = compareAndBuildAlterTableSql(tableId, beforeDetails, afterDetails);
+        sqlBuilder.append(possibleAlterTableSql);
+      } else {
+        columnDetailsMap.put(tableId, afterDetails);
+      }
       sqlBuilder.append(buildSingleIdempotentUpdate(changeEvent));
     }
+    return sqlBuilder.toString();
+  }
+
+  // No support for column renaming.
+  private String compareAndBuildAlterTableSql(TableIdentifier tableIdentifier, List<ColumnDetails> beforeDetails, List<ColumnDetails> afterDetails) {
+    var sqlBuilder = new StringBuilder();
+
+    for (var afterCol : afterDetails) {
+      var isNewColumn = beforeDetails.stream().noneMatch(beforeCol -> beforeCol.getName().equals(afterCol.getName()));
+      if (isNewColumn) {
+        sqlBuilder.append(String.format(ADD_COLUMN, String.format("cdc_%s", tableIdentifier.getStringFormat()), afterCol.getName(), TypeUtils.convertSqlTypeToString(afterCol.getSqlType(), afterCol.getSize())));
+      }
+    }
+
+    for (var beforeCol : beforeDetails) {
+      var noLongerPresent = afterDetails.stream().noneMatch(afterCol -> afterCol.getName().equals(beforeCol.getName()));
+      if (noLongerPresent) {
+        sqlBuilder.append(String.format(DROP_COLUMN, String.format("cdc_%s", tableIdentifier.getStringFormat()), beforeCol.getName()));
+      }
+    }
+
     return sqlBuilder.toString();
   }
 
@@ -161,7 +193,7 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
   }
 
   private String quoteIfString(Object value) {
-    if (value.getClass().getName() == "java.lang.String") {
+    if (value.getClass().getName().equals("java.lang.String")) {
       return "\"" + value + "\"";
     }
     return String.valueOf(value);
