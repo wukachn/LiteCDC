@@ -5,6 +5,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Tab
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -56,7 +57,7 @@ public class ChangeDataConsumer implements Runnable {
         List<ChangeEvent> changeEvents =
             StreamSupport.stream(consumerRecords.spliterator(), false)
                 .map(ConsumerRecord::value)
-                .toList();
+                .collect(Collectors.toList());
         eventProcessor.process(changeEvents);
       }
     } catch (Exception e) {

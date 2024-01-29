@@ -4,27 +4,33 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.database.MySq
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.util.MySqlTypeUtils;
 import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class MySqlChangeEventProcessor implements ChangeEventProcessor {
+  private static String ADD_COLUMN = "ALTER TABLE %s ADD COLUMN %s %s;";
+  private static String DROP_COLUMN = "ALTER TABLE %s DROP COLUMN %s;";
+  private static String ALTER_COLUMN = "ALTER TABLE %s MODIFY %s %s %s;";
   private JdbcConnection jdbcConnection;
+  private Map<TableIdentifier, List<ColumnDetails>> columnDetailsMap;
 
   public MySqlChangeEventProcessor(MySqlConnectionConfiguration connectionConfig) {
     this.jdbcConnection = new JdbcConnection(connectionConfig);
+    this.columnDetailsMap = new HashMap<>();
   }
 
   @Override
   public void process(List<ChangeEvent> changeEvents) {
-    if (changeEvents.size() == 0) {
+    if (changeEvents.isEmpty()) {
       return;
     }
+
+    Collections.sort(changeEvents);
 
     createDatabasesIfNotExists(changeEvents);
     createTablesIfNotExists(changeEvents);
@@ -52,7 +58,7 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
   }
 
   private void deliverChanges(List<ChangeEvent> changeEvents) {
-    var updateSql = buildAllIdempotentUpdates(changeEvents);
+    var updateSql = buildUpdates(changeEvents);
     try (var stmt = jdbcConnection.getConnection().createStatement()) {
       stmt.execute(updateSql);
     } catch (SQLException e) {
@@ -78,7 +84,7 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
             .collect(
                 Collectors.groupingBy(
                     event -> event.getMetadata().getTableId().getStringFormat(),
-                    Collectors.maxBy(
+                    Collectors.minBy(
                         Comparator.comparingLong(event -> event.getMetadata().getOffset()))))
             .values()
             .stream()
@@ -110,16 +116,79 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
 
   private String buildCreateTableColumnString(ColumnDetails details) {
     var columnName = details.getName();
-    var columnType = convertSqlTypeToString(details.getSqlType(), details.getSize());
+    var columnType = MySqlTypeUtils.convertSqlTypeToString(details.getSqlType(), details.getSize());
     var primaryKey = details.isPrimaryKey() ? "PRIMARY KEY" : "";
     return String.format("%s %s %s", columnName, columnType, primaryKey);
   }
 
-  private String buildAllIdempotentUpdates(List<ChangeEvent> changeEvents) {
+  private String buildUpdates(List<ChangeEvent> changeEvents) {
     var sqlBuilder = new StringBuilder();
     for (var changeEvent : changeEvents) {
+      var tableId = changeEvent.getMetadata().getTableId();
+      var afterDetails = changeEvent.getAfterColumnDetails();
+      if (columnDetailsMap.containsKey(tableId)) {
+        var beforeDetails = columnDetailsMap.get(tableId);
+        var possibleAlterTableSql =
+            compareAndBuildAlterTableSql(tableId, beforeDetails, afterDetails);
+        sqlBuilder.append(possibleAlterTableSql);
+      } else {
+        columnDetailsMap.put(tableId, afterDetails);
+      }
       sqlBuilder.append(buildSingleIdempotentUpdate(changeEvent));
     }
+    return sqlBuilder.toString();
+  }
+
+  // No support for column renaming.
+  private String compareAndBuildAlterTableSql(
+      TableIdentifier tableIdentifier,
+      List<ColumnDetails> beforeDetails,
+      List<ColumnDetails> afterDetails) {
+    var sqlBuilder = new StringBuilder();
+
+    // Check for deleted columns.
+    for (var beforeCol : beforeDetails) {
+      var noLongerPresent =
+          afterDetails.stream()
+              .noneMatch(afterCol -> afterCol.getName().equals(beforeCol.getName()));
+      if (noLongerPresent) {
+        sqlBuilder.append(
+            String.format(
+                DROP_COLUMN,
+                String.format("cdc_%s", tableIdentifier.getStringFormat()),
+                beforeCol.getName()));
+      }
+    }
+
+    // Check for new columns and changes.
+    for (var afterCol : afterDetails) {
+      var optionalBeforeCol =
+          beforeDetails.stream()
+              .filter(col -> col.getName().equals(afterCol.getName()))
+              .findFirst();
+      if (optionalBeforeCol.isEmpty()) {
+        sqlBuilder.append(
+            String.format(
+                ADD_COLUMN,
+                String.format("cdc_%s", tableIdentifier.getStringFormat()),
+                afterCol.getName(),
+                MySqlTypeUtils.convertSqlTypeToString(afterCol.getSqlType(), afterCol.getSize())));
+        continue;
+      }
+      var beforeCol = optionalBeforeCol.get();
+      if (beforeCol.getSqlType() != afterCol.getSqlType()
+          || beforeCol.getSize() != afterCol.getSize()
+          || beforeCol.isNullable() != afterCol.isNullable()) {
+        sqlBuilder.append(
+            String.format(
+                ALTER_COLUMN,
+                String.format("cdc_%s", tableIdentifier.getStringFormat()),
+                afterCol.getName(),
+                MySqlTypeUtils.convertSqlTypeToString(afterCol.getSqlType(), afterCol.getSize()),
+                MySqlTypeUtils.convertNullableBooleanToString(afterCol.isNullable())));
+      }
+    }
+
     return sqlBuilder.toString();
   }
 
@@ -158,41 +227,9 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
   }
 
   private String quoteIfString(Object value) {
-    if (value.getClass().getName() == "java.lang.String") {
+    if (value.getClass().getName().equals("java.lang.String")) {
       return "\"" + value + "\"";
     }
     return String.valueOf(value);
-  }
-
-  private String convertSqlTypeToString(int type, int size) {
-    switch (type) {
-      case Types.BOOLEAN -> {
-        return "BOOLEAN";
-      }
-      case Types.TINYINT -> {
-        return String.format("TINYINT(%s)", size);
-      }
-      case Types.SMALLINT -> {
-        return String.format("SMALLINT(%s)", size);
-      }
-      case Types.INTEGER -> {
-        return String.format("INT(%s)", size);
-      }
-      case Types.BIT -> {
-        return String.format("BIT(%s)", size);
-      }
-      case Types.BIGINT -> {
-        return String.format("BIGINT(%s)", size);
-      }
-      case Types.FLOAT -> {
-        return String.format("FLOAT(%s)", size);
-      }
-      case Types.DOUBLE -> {
-        return String.format("DOUBLE(%s)", size);
-      }
-      default -> {
-        return String.format("VARCHAR(%s)", size);
-      }
-    }
   }
 }

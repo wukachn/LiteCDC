@@ -8,8 +8,10 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Col
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnWithData;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.PostgresMetadata;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.util.PostgresTypeUtils;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.time.Instant;
@@ -68,7 +70,58 @@ public class PgOutputMessageDecoder {
     var schemaName = readStringFromBuffer(buffer);
     var tableName = readStringFromBuffer(buffer);
     var tableId = TableIdentifier.of(schemaName, tableName);
-    var columns = jdbcConnection.getTableColumns(tableId);
+
+    int replicaIdentityId = buffer.get();
+    short columnCount = buffer.getShort();
+
+    List<String> primaryKeys = new ArrayList<>();
+    Map<String, PgOutputColumnMetadata> columnMetadata = new HashMap<>();
+    try (var conn = jdbcConnection.getConnection()) {
+      var metadata = conn.getMetaData();
+
+      var rsPk = metadata.getPrimaryKeys(null, schemaName, tableName);
+      while (rsPk.next()) {
+        var columnName = rsPk.getString(4);
+        primaryKeys.add(columnName);
+      }
+
+      var rsCol = metadata.getColumns(null, schemaName, tableName, null);
+      while (rsCol.next()) {
+        var columnName = rsCol.getString(4);
+        var jdbcNullable = rsCol.getInt(11);
+        var isNullable =
+            jdbcNullable == ResultSetMetaData.columnNullable
+                || jdbcNullable == ResultSetMetaData.columnNullableUnknown;
+        var size = rsCol.getInt(7);
+
+        columnMetadata.put(
+            columnName, PgOutputColumnMetadata.builder().isNullable(isNullable).size(size).build());
+      }
+    }
+
+    List<ColumnDetails> columns = new ArrayList<>();
+    for (var i = 0; i < columnCount; i++) {
+      byte flags = buffer.get();
+      var name = readStringFromBuffer(buffer);
+      var oid = buffer.getInt();
+      int attypmod = buffer.getInt();
+
+      var type = PostgresTypeUtils.convertOIDToJDBCType(oid);
+
+      var metadata = columnMetadata.get(name);
+      var size = metadata.getSize();
+      var isNullable = metadata.isNullable();
+      var isPrimaryKey = primaryKeys.contains(name);
+
+      columns.add(
+          ColumnDetails.builder()
+              .name(name)
+              .sqlType(type)
+              .size(size)
+              .isNullable(isNullable)
+              .isPrimaryKey(isPrimaryKey)
+              .build());
+    }
 
     tableColumnMap.put(relationId, columns);
     relationIdToTableId.put(relationId, tableId);
