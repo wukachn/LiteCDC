@@ -19,6 +19,7 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
+import com.thirdyearproject.changedatacaptureapplication.util.PostgresTypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.replication.LogSequenceNumber;
 
@@ -100,8 +101,10 @@ public class PgOutputMessageDecoder {
     for (var i = 0; i < columnCount; i ++) {
       byte flags = buffer.get();
       var name = readStringFromBuffer(buffer);
-      var type = buffer.getInt();
+      var oid = buffer.getInt();
       int attypmod = buffer.getInt();
+
+      var type = PostgresTypeUtils.convertOIDToJDBCType(oid);
 
       var metadata = columnMetadata.get(name);
       var size = metadata.getSize();

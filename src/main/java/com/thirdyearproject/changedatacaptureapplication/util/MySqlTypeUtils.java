@@ -2,7 +2,15 @@ package com.thirdyearproject.changedatacaptureapplication.util;
 
 import java.sql.Types;
 
-public class TypeUtils {
+public class MySqlTypeUtils {
+  public static String convertNullableBooleanToString(boolean isNullable) {
+    if (isNullable) {
+      return "NULL";
+    } else {
+      return "NOT NULL";
+    }
+  }
+
   public static String convertSqlTypeToString(int type, int size) {
     switch (type) {
       case Types.BOOLEAN -> {
@@ -30,6 +38,9 @@ public class TypeUtils {
         return String.format("DOUBLE(%s)", size);
       }
       default -> {
+        if (size > 16383) {
+          return "TEXT";
+        }
         return String.format("VARCHAR(%s)", size);
       }
     }
