@@ -10,15 +10,37 @@ import org.springframework.stereotype.Component;
 public class PipelineInitializer {
 
   private final PipelineFactory pipelineFactory;
+  private Thread pipelineThread;
 
   public PipelineInitializer(ChangeEventProducer changeEventProducer) {
     this.pipelineFactory = new PipelineFactory(changeEventProducer);
   }
 
-  public void runPipeline(PipelineConfiguration config) {
+  public synchronized void runPipeline(PipelineConfiguration config) {
+    log.info("Attempting to start pipeline");
+    if (pipelineThread != null) {
+      log.error("A pipeline is already running.");
+      throw new IllegalStateException("A pipeline is already running.");
+    }
     var pipeline = pipelineFactory.create(config);
+    pipelineThread = new Thread(pipeline);
+    pipelineThread.start();
+    log.info("Pipeline started.");
+  }
 
-    log.info("Starting Pipeline");
-    new Thread(pipeline).start();
+  public synchronized void haltPipeline() {
+    log.info("Attempting to halt pipeline");
+    if (pipelineThread == null) {
+      log.error("No pipeline is running.");
+      throw new IllegalStateException("No pipeline is running.");
+    }
+    pipelineThread.interrupt();
+    try {
+      pipelineThread.join();
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+    pipelineThread = null;
+    log.info("Pipeline halted.");
   }
 }

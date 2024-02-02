@@ -6,6 +6,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.PgOutputMessageD
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;
+import org.postgresql.replication.PGReplicationStream;
 
 @Slf4j
 public class PostgresStreamer extends Streamer {
@@ -16,6 +17,7 @@ public class PostgresStreamer extends Streamer {
 
   private final PgOutputMessageDecoder pgOutputMessageDecoder;
   private final JdbcConnection replicationConnection;
+  private PGReplicationStream replicationStream;
 
   public PostgresStreamer(ConnectionConfiguration connectionConfiguration) {
     super(new JdbcConnection(connectionConfiguration));
@@ -24,13 +26,15 @@ public class PostgresStreamer extends Streamer {
   }
 
   @Override
-  protected void initEnvironment() throws SQLException {}
+  protected void initEnvironment() throws SQLException {
+    this.replicationStream = replicationConnection.getReplicationStream();
+  }
 
   @Override
   protected void streamChanges(ChangeEventProducer changeEventProducer) {
-    try (var replicationStream = replicationConnection.getReplicationStream()) {
-      while (!replicationStream.isClosed()) {
-        var message = replicationStream.read();
+    try {
+      while (!replicationStream.isClosed() && !Thread.interrupted()) {
+        var message = replicationStream.readPending();
         if (message == null) {
           continue;
         }
@@ -41,7 +45,7 @@ public class PostgresStreamer extends Streamer {
         }
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error(e.getMessage(), e);
     }
   }
 
