@@ -1,6 +1,6 @@
-package com.thirdyearproject.changedatacaptureapplication.api.model.database.mysql;
+package com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql;
 
-import com.thirdyearproject.changedatacaptureapplication.api.model.database.DestinationConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.DestinationConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventProcessor;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.MySqlChangeEventProcessor;
 import lombok.Builder;

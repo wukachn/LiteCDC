@@ -1,6 +1,6 @@
 package com.thirdyearproject.changedatacaptureapplication.engine;
 
-import com.thirdyearproject.changedatacaptureapplication.api.model.database.ConnectionConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.ConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.io.Closeable;

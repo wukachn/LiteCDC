@@ -1,6 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import java.sql.SQLException;
 
@@ -11,10 +12,10 @@ public abstract class Streamer {
     this.jdbcConnection = jdbcConnection;
   }
 
-  public void stream(ChangeEventProducer changeEventProducer) {
+  public void stream(ChangeEventProducer changeEventProducer, MetricsService metricsService) {
     try {
       initEnvironment();
-      streamChanges(changeEventProducer);
+      streamChanges(changeEventProducer, metricsService);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
@@ -22,6 +23,6 @@ public abstract class Streamer {
 
   protected abstract void initEnvironment() throws SQLException;
 
-  protected abstract void streamChanges(ChangeEventProducer changeEventProducer)
+  protected abstract void streamChanges(ChangeEventProducer changeEventProducer, MetricsService metricsService)
       throws SQLException;
 }

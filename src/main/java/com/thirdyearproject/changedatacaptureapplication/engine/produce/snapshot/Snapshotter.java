@@ -1,6 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
@@ -22,7 +23,7 @@ public abstract class Snapshotter {
     this.tableColumnMap = new HashMap<>();
   }
 
-  public void snapshot(Set<TableIdentifier> tables, ChangeEventProducer changeEventProducer) {
+  public void snapshot(Set<TableIdentifier> tables, ChangeEventProducer changeEventProducer, MetricsService metricsService) {
     log.info(
         String.format(
             "Starting snapshot on the following tables: %s",
