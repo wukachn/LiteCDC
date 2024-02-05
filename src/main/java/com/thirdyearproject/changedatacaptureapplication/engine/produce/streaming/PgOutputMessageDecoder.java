@@ -1,13 +1,16 @@
 // This file is heavily inspired by debezium
 // https://github.com/debezium/debezium/blob/ef69dbe91c482d4ea505368b3a1a55c40eeb5ffb/debezium-connector-postgres/src/main/java/io/debezium/connector/postgresql/connection/pgoutput/PgOutputMessageDecoder.java#L722
-package com.thirdyearproject.changedatacaptureapplication.engine;
+package com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming;
 
+import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.CRUD;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnWithData;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.PostgresMetadata;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.PostgresMessageType;
+import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.PgOutputColumnMetadata;
 import com.thirdyearproject.changedatacaptureapplication.util.PostgresTypeUtils;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
@@ -39,7 +42,7 @@ public class PgOutputMessageDecoder {
 
   public Optional<ChangeEvent> processNotEmptyMessage(ByteBuffer buffer, LogSequenceNumber lsn)
       throws SQLException {
-    final MessageType messageType = MessageType.forType((char) buffer.get());
+    final PostgresMessageType messageType = PostgresMessageType.forType((char) buffer.get());
     switch (messageType) {
       case BEGIN:
         handleBeginMessage(buffer);
@@ -267,45 +270,5 @@ public class PgOutputMessageDecoder {
       sb.append((char) b);
     }
     return sb.toString();
-  }
-
-  public enum MessageType {
-    RELATION,
-    BEGIN,
-    COMMIT,
-    INSERT,
-    UPDATE,
-    DELETE,
-    TYPE,
-    ORIGIN,
-    TRUNCATE,
-    LOGICAL_DECODING_MESSAGE;
-
-    public static MessageType forType(char type) {
-      switch (type) {
-        case 'R':
-          return RELATION;
-        case 'B':
-          return BEGIN;
-        case 'C':
-          return COMMIT;
-        case 'I':
-          return INSERT;
-        case 'U':
-          return UPDATE;
-        case 'D':
-          return DELETE;
-        case 'Y':
-          return TYPE;
-        case 'O':
-          return ORIGIN;
-        case 'T':
-          return TRUNCATE;
-        case 'M':
-          return LOGICAL_DECODING_MESSAGE;
-        default:
-          throw new IllegalArgumentException("Unsupported message type: " + type);
-      }
-    }
   }
 }

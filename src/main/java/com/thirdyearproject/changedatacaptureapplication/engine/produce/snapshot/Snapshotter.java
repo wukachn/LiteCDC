@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.snapshot;
+package com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;

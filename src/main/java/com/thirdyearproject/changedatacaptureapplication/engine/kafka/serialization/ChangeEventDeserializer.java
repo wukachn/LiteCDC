@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.change;
+package com.thirdyearproject.changedatacaptureapplication.engine.kafka.serialization;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

@@ -2,6 +2,8 @@ package com.thirdyearproject.changedatacaptureapplication.engine.change;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventProcessor;
+import com.thirdyearproject.changedatacaptureapplication.engine.kafka.serialization.ChangeEventDeserializer;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;

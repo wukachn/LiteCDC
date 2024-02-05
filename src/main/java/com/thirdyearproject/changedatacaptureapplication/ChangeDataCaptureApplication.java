@@ -1,7 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
-import com.thirdyearproject.changedatacaptureapplication.engine.change.KafkaProducerService;
+import com.thirdyearproject.changedatacaptureapplication.engine.kafka.KafkaProducerService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;

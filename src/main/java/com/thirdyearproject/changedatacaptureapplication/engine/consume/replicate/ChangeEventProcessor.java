@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.change;
+package com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import java.util.List;

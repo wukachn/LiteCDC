@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.snapshot;
+package com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.thirdyearproject.changedatacaptureapplication.api.model.database.ConnectionConfiguration;
