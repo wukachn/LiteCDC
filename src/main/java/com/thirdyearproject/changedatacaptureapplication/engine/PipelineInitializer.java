@@ -20,7 +20,7 @@ public class PipelineInitializer {
     log.info("Attempting to start pipeline");
     if (pipelineThread != null) {
       log.error("A pipeline is already running.");
-      throw new IllegalStateException("A pipeline is already running.");
+      throw new PipelineConflictException("A pipeline is already running.");
     }
     var pipeline = pipelineFactory.create(config);
     pipelineThread = new Thread(pipeline);
@@ -32,7 +32,7 @@ public class PipelineInitializer {
     log.info("Attempting to halt pipeline");
     if (pipelineThread == null) {
       log.error("No pipeline is running.");
-      throw new IllegalStateException("No pipeline is running.");
+      throw new PipelineConflictException("No pipeline is running.");
     }
     pipelineThread.interrupt();
     try {
