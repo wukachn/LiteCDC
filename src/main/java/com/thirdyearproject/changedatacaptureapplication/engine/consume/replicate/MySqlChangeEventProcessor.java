@@ -1,6 +1,6 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate;
 
-import com.thirdyearproject.changedatacaptureapplication.api.model.database.mysql.MySqlConnectionConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySqlConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;

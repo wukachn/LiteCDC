@@ -1,6 +1,6 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming;
 
-import com.thirdyearproject.changedatacaptureapplication.api.model.database.ConnectionConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.ConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;

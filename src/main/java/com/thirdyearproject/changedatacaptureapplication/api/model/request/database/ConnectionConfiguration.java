@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.api.model.database;
+package com.thirdyearproject.changedatacaptureapplication.api.model.request.database;
 
 import java.util.Properties;
 

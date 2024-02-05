@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.api.model;
+package com.thirdyearproject.changedatacaptureapplication.api.model.request;
 
 import lombok.Builder;
 import lombok.NonNull;

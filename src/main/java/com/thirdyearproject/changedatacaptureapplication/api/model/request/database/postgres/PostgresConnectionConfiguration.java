@@ -1,7 +1,7 @@
-package com.thirdyearproject.changedatacaptureapplication.api.model.database.postgres;
+package com.thirdyearproject.changedatacaptureapplication.api.model.request.database.postgres;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.thirdyearproject.changedatacaptureapplication.api.model.database.ConnectionConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.ConnectionConfiguration;
 import java.util.Properties;
 import lombok.Builder;
 import lombok.NonNull;

@@ -1,7 +1,7 @@
-package com.thirdyearproject.changedatacaptureapplication.api.model;
+package com.thirdyearproject.changedatacaptureapplication.api.model.request;
 
-import com.thirdyearproject.changedatacaptureapplication.api.model.database.DestinationConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.api.model.database.SourceConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.DestinationConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.SourceConfiguration;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
