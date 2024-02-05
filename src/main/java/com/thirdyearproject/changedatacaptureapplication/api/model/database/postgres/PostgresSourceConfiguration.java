@@ -1,10 +1,11 @@
-package com.thirdyearproject.changedatacaptureapplication.api.model.database;
+package com.thirdyearproject.changedatacaptureapplication.api.model.database.postgres;
 
+import com.thirdyearproject.changedatacaptureapplication.api.model.database.SourceConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
-import com.thirdyearproject.changedatacaptureapplication.engine.snapshot.PostgresSnapshotter;
-import com.thirdyearproject.changedatacaptureapplication.engine.snapshot.Snapshotter;
-import com.thirdyearproject.changedatacaptureapplication.engine.streaming.PostgresStreamer;
-import com.thirdyearproject.changedatacaptureapplication.engine.streaming.Streamer;
+import com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot.PostgresSnapshotter;
+import com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot.Snapshotter;
+import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.PostgresStreamer;
+import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.Streamer;
 import java.util.Set;
 import lombok.Builder;
 import lombok.NonNull;

@@ -2,6 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine.change;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
+import com.thirdyearproject.changedatacaptureapplication.engine.kafka.KafkaProducerService;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

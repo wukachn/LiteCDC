@@ -1,8 +1,7 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.streaming;
+package com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.database.ConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
-import com.thirdyearproject.changedatacaptureapplication.engine.PgOutputMessageDecoder;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;

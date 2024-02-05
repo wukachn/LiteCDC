@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.snapshot;
+package com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot;
 
 import lombok.Builder;
 import lombok.NonNull;

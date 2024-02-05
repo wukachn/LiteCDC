@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.change;
+package com.thirdyearproject.changedatacaptureapplication.engine.kafka;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;

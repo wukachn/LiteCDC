@@ -1,5 +1,7 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.change;
+package com.thirdyearproject.changedatacaptureapplication.engine.kafka;
 
+import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeDataConsumer;
+import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventProcessor;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.util.Collections;
 import java.util.Properties;

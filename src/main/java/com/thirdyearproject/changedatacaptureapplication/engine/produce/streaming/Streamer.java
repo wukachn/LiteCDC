@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.streaming;
+package com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;

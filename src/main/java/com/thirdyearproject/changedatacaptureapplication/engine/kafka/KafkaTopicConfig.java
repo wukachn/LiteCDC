@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.change;
+package com.thirdyearproject.changedatacaptureapplication.engine.kafka;
 
 import java.util.HashMap;
 import java.util.Map;

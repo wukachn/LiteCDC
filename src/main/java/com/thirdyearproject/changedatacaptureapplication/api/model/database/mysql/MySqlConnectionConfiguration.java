@@ -1,5 +1,6 @@
-package com.thirdyearproject.changedatacaptureapplication.api.model.database;
+package com.thirdyearproject.changedatacaptureapplication.api.model.database.mysql;
 
+import com.thirdyearproject.changedatacaptureapplication.api.model.database.ConnectionConfiguration;
 import java.util.Properties;
 import lombok.Builder;
 import lombok.NonNull;

@@ -2,9 +2,9 @@ package com.thirdyearproject.changedatacaptureapplication.engine;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.PipelineConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
-import com.thirdyearproject.changedatacaptureapplication.engine.change.KafkaConsumerManager;
-import com.thirdyearproject.changedatacaptureapplication.engine.snapshot.Snapshotter;
-import com.thirdyearproject.changedatacaptureapplication.engine.streaming.Streamer;
+import com.thirdyearproject.changedatacaptureapplication.engine.kafka.KafkaConsumerManager;
+import com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot.Snapshotter;
+import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.Streamer;
 import java.io.Closeable;
 import java.io.IOException;
 import lombok.Builder;
