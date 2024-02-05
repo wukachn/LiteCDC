@@ -2,6 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine.produce.streami
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.database.ConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,7 @@ public class PostgresStreamer extends Streamer {
   }
 
   @Override
-  protected void streamChanges(ChangeEventProducer changeEventProducer) {
+  protected void streamChanges(ChangeEventProducer changeEventProducer, MetricsService metricsService) {
     try {
       while (!replicationStream.isClosed() && !Thread.interrupted()) {
         var message = replicationStream.readPending();

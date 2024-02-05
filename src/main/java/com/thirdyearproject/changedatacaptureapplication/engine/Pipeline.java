@@ -3,6 +3,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine;
 import com.thirdyearproject.changedatacaptureapplication.api.model.PipelineConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.kafka.KafkaConsumerManager;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot.Snapshotter;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.Streamer;
 import java.io.Closeable;
@@ -15,6 +16,7 @@ public class Pipeline implements Closeable, Runnable {
   Snapshotter snapshotter;
   Streamer streamer;
   ChangeEventProducer changeEventProducer;
+  MetricsService metricsService;
 
   @Override
   public void close() throws IOException {}
@@ -29,7 +31,7 @@ public class Pipeline implements Closeable, Runnable {
           pipelineConfiguration.getDestinationConfig().createChangeEventProcessor();
       KafkaConsumerManager.createConsumers(bootstrapServer, topicPrefix, tables, eventProcessor);
     }
-    snapshotter.snapshot(tables, changeEventProducer);
-    streamer.stream(changeEventProducer);
+    snapshotter.snapshot(tables, changeEventProducer, metricsService);
+    streamer.stream(changeEventProducer, metricsService);
   }
 }

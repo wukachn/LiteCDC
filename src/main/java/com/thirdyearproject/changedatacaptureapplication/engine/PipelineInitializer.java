@@ -2,6 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.PipelineConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -12,8 +13,8 @@ public class PipelineInitializer {
   private final PipelineFactory pipelineFactory;
   private Thread pipelineThread;
 
-  public PipelineInitializer(ChangeEventProducer changeEventProducer) {
-    this.pipelineFactory = new PipelineFactory(changeEventProducer);
+  public PipelineInitializer(ChangeEventProducer changeEventProducer, MetricsService metricsServer) {
+    this.pipelineFactory = new PipelineFactory(changeEventProducer, metricsServer);
   }
 
   public synchronized void runPipeline(PipelineConfiguration config) {

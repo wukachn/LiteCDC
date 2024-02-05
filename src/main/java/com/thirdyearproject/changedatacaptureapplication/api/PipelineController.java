@@ -1,6 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.api;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.PipelineConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.PipelineInitializer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,10 +16,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class PipelineController {
 
   private final PipelineInitializer pipelineInitializer;
+  private final MetricsService metricsService;
 
   @Autowired
-  public PipelineController(PipelineInitializer pipelineInitializer) {
+  public PipelineController(PipelineInitializer pipelineInitializer, MetricsService metricsService) {
     this.pipelineInitializer = pipelineInitializer;
+    this.metricsService = metricsService;
   }
 
   @PostMapping("/run")
