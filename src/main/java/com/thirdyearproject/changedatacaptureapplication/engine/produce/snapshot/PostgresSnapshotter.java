@@ -25,7 +25,7 @@ public class PostgresSnapshotter extends Snapshotter {
       "CREATE_REPLICATION_SLOT \"%s\" LOGICAL pgoutput";
 
   private static final String CREATE_PUBLICATION =
-      "CREATE PUBLICATION \"%s\" FOR ALL TABLES;";
+      "CREATE PUBLICATION \"%s\" FOR TABLE %s;";
 
   private static final String SELECT_ALL = "SELECT * FROM %s";
 
@@ -47,10 +47,11 @@ public class PostgresSnapshotter extends Snapshotter {
   }
 
   @Override
-  protected void createSnapshotEnvironment() throws SQLException {
+  protected void createSnapshotEnvironment(Set<TableIdentifier> tables) throws SQLException {
     var stmt = replicationSlotConnection.getConnection().createStatement();
 
-    var createPublicationSql = String.format(CREATE_PUBLICATION, publication);
+    var tableCsv = String.join(", ", tables.stream().map(TableIdentifier::getStringFormat).toList());
+    var createPublicationSql = String.format(CREATE_PUBLICATION, publication, tableCsv);
     log.info("Creating Publication with Statement: {}", createPublicationSql);
     stmt.execute(createPublicationSql);
 

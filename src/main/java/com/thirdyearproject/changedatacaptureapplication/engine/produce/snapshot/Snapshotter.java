@@ -31,7 +31,7 @@ public abstract class Snapshotter {
 
     try {
       log.info("Step 1: Setting up start point of snapshot.");
-      createSnapshotEnvironment();
+      createSnapshotEnvironment(tables);
 
       log.info("Step 2: Snapshotting structure of tables");
       captureStructure(tables);
@@ -46,7 +46,7 @@ public abstract class Snapshotter {
     }
   }
 
-  protected abstract void createSnapshotEnvironment() throws SQLException;
+  protected abstract void createSnapshotEnvironment(Set<TableIdentifier> tables) throws SQLException;
 
   protected abstract void captureStructure(Set<TableIdentifier> tables) throws SQLException;
 
