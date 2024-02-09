@@ -27,8 +27,7 @@ public class PostgresStreamer extends Streamer {
   }
 
   @Override
-  protected void streamChanges(ChangeEventProducer changeEventProducer, MetricsService metricsService) {
-    try {
+  protected void streamChanges(ChangeEventProducer changeEventProducer, MetricsService metricsService) throws SQLException {
       while (!replicationStream.isClosed() && !Thread.interrupted()) {
         var message = replicationStream.readPending();
         if (message == null) {
@@ -40,8 +39,5 @@ public class PostgresStreamer extends Streamer {
           changeEventProducer.sendEvent(optionalEvent.get());
         }
       }
-    } catch (Exception e) {
-      log.error(e.getMessage(), e);
-    }
   }
 }

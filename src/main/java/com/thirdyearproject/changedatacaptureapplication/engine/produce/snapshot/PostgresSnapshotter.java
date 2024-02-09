@@ -108,8 +108,6 @@ public class PostgresSnapshotter extends Snapshotter {
           changeEventProducer.sendEvent(changeEvent);
         }
       }
-    } catch (JsonMappingException e) {
-      throw new RuntimeException(e);
     }
   }
 

@@ -18,7 +18,7 @@ public class PipelineInitializer {
   }
 
   public synchronized void runPipeline(PipelineConfiguration config) {
-    log.info("Attempting to start pipeline");
+    log.info("Attempting to start pipeline.");
     if (pipelineThread != null) {
       log.error("A pipeline is already running.");
       throw new PipelineConflictException("A pipeline is already running.");
@@ -30,7 +30,7 @@ public class PipelineInitializer {
   }
 
   public synchronized void haltPipeline() {
-    log.info("Attempting to halt pipeline");
+    log.info("Attempting to halt pipeline.");
     if (pipelineThread == null) {
       log.error("No pipeline is running.");
       throw new PipelineConflictException("No pipeline is running.");
