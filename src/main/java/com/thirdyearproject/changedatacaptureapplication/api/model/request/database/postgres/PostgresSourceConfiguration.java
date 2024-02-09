@@ -12,6 +12,7 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
 
 @Value
 @Builder
@@ -20,6 +21,22 @@ import lombok.extern.slf4j.Slf4j;
 public class PostgresSourceConfiguration implements SourceConfiguration {
   @NonNull PostgresConnectionConfiguration connectionConfig;
   @NonNull Set<TableIdentifier> capturedTables;
+  @Nullable String replicationSlot;
+  @Nullable String publication;
+
+  private String getReplicationSlot() {
+    if (replicationSlot != null) {
+      return replicationSlot;
+    }
+    return "cdc_replication_slot";
+  }
+
+  private String getPublication() {
+    if (publication != null) {
+      return publication;
+    }
+    return "cdc_publication";
+  }
 
   @Override
   public Set<TableIdentifier> getTables() {
@@ -28,11 +45,11 @@ public class PostgresSourceConfiguration implements SourceConfiguration {
 
   @Override
   public Snapshotter getSnapshotter() {
-    return new PostgresSnapshotter(connectionConfig);
+    return new PostgresSnapshotter(connectionConfig, getPublication(), getReplicationSlot());
   }
 
   @Override
   public Streamer getStreamer() {
-    return new PostgresStreamer(connectionConfig);
+    return new PostgresStreamer(connectionConfig, getPublication(), getReplicationSlot());
   }
 }

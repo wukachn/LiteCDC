@@ -15,11 +15,15 @@ public class PostgresStreamer extends Streamer {
   private final PgOutputMessageDecoder pgOutputMessageDecoder;
   private final JdbcConnection replicationConnection;
   private PGReplicationStream replicationStream;
+  private String replicationSlot;
+  private String publication;
 
-  public PostgresStreamer(ConnectionConfiguration connectionConfiguration) {
+  public PostgresStreamer(ConnectionConfiguration connectionConfiguration, String publication, String replicationSlot) {
     super(new JdbcConnection(connectionConfiguration));
     this.replicationConnection = new JdbcConnection(connectionConfiguration);
     this.pgOutputMessageDecoder = new PgOutputMessageDecoder(jdbcConnection);
+    this.publication = publication;
+    this.replicationSlot = replicationSlot;
   }
 
   @Override
@@ -28,9 +32,9 @@ public class PostgresStreamer extends Streamer {
     this.replicationStream = conn.getReplicationAPI()
             .replicationStream()
             .logical()
-            .withSlotName("cdc_replication_slot")
+            .withSlotName(replicationSlot)
             .withSlotOption("proto_version", 1)
-            .withSlotOption("publication_names", "cdc_publication")
+            .withSlotOption("publication_names", publication)
             .start();
   }
 
