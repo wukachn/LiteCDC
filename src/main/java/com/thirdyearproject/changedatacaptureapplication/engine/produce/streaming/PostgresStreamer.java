@@ -2,8 +2,8 @@ package com.thirdyearproject.changedatacaptureapplication.engine.produce.streami
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.ConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
-import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.core.BaseConnection;
@@ -18,7 +18,8 @@ public class PostgresStreamer extends Streamer {
   private String replicationSlot;
   private String publication;
 
-  public PostgresStreamer(ConnectionConfiguration connectionConfiguration, String publication, String replicationSlot) {
+  public PostgresStreamer(
+      ConnectionConfiguration connectionConfiguration, String publication, String replicationSlot) {
     super(new JdbcConnection(connectionConfiguration));
     this.replicationConnection = new JdbcConnection(connectionConfiguration);
     this.pgOutputMessageDecoder = new PgOutputMessageDecoder(jdbcConnection);
@@ -29,7 +30,8 @@ public class PostgresStreamer extends Streamer {
   @Override
   protected void initEnvironment() throws SQLException {
     BaseConnection conn = (BaseConnection) replicationConnection.getConnection();
-    this.replicationStream = conn.getReplicationAPI()
+    this.replicationStream =
+        conn.getReplicationAPI()
             .replicationStream()
             .logical()
             .withSlotName(replicationSlot)
@@ -39,17 +41,18 @@ public class PostgresStreamer extends Streamer {
   }
 
   @Override
-  protected void streamChanges(ChangeEventProducer changeEventProducer, MetricsService metricsService) throws SQLException {
-      while (!replicationStream.isClosed() && !Thread.interrupted()) {
-        var message = replicationStream.readPending();
-        if (message == null) {
-          continue;
-        }
-        var lsn = replicationStream.getLastReceiveLSN();
-        var optionalEvent = pgOutputMessageDecoder.processNotEmptyMessage(message, lsn);
-        if (optionalEvent.isPresent()) {
-          changeEventProducer.sendEvent(optionalEvent.get());
-        }
+  protected void streamChanges(
+      ChangeEventProducer changeEventProducer, MetricsService metricsService) throws SQLException {
+    while (!replicationStream.isClosed() && !Thread.interrupted()) {
+      var message = replicationStream.readPending();
+      if (message == null) {
+        continue;
       }
+      var lsn = replicationStream.getLastReceiveLSN();
+      var optionalEvent = pgOutputMessageDecoder.processNotEmptyMessage(message, lsn);
+      if (optionalEvent.isPresent()) {
+        changeEventProducer.sendEvent(optionalEvent.get());
+      }
+    }
   }
 }

@@ -1,8 +1,8 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
-import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import java.sql.SQLException;
 
 public abstract class Streamer {
@@ -23,6 +23,6 @@ public abstract class Streamer {
 
   protected abstract void initEnvironment() throws SQLException;
 
-  protected abstract void streamChanges(ChangeEventProducer changeEventProducer, MetricsService metricsService)
-      throws SQLException;
+  protected abstract void streamChanges(
+      ChangeEventProducer changeEventProducer, MetricsService metricsService) throws SQLException;
 }
