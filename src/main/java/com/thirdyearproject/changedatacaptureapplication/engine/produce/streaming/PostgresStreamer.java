@@ -6,6 +6,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsS
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;
+import org.postgresql.core.BaseConnection;
 import org.postgresql.replication.PGReplicationStream;
 
 @Slf4j
@@ -23,7 +24,14 @@ public class PostgresStreamer extends Streamer {
 
   @Override
   protected void initEnvironment() throws SQLException {
-    this.replicationStream = replicationConnection.getReplicationStream();
+    BaseConnection conn = (BaseConnection) replicationConnection.getConnection();
+    this.replicationStream = conn.getReplicationAPI()
+            .replicationStream()
+            .logical()
+            .withSlotName("cdc_replication_slot")
+            .withSlotOption("proto_version", 1)
+            .withSlotOption("publication_names", "cdc_publication")
+            .start();
   }
 
   @Override

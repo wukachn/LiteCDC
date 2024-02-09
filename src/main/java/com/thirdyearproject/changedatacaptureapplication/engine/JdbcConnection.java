@@ -14,8 +14,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.postgresql.core.BaseConnection;
-import org.postgresql.replication.PGReplicationStream;
 
 // TODO: replace with ability to have multiple connections in parallel.
 @Slf4j
@@ -35,17 +33,6 @@ public class JdbcConnection implements Closeable {
               connectionConfig.getJdbcUrl(), connectionConfig.getBasicJdbcProperties());
     }
     return this.connection;
-  }
-
-  public PGReplicationStream getReplicationStream() throws SQLException {
-    BaseConnection conn = (BaseConnection) getConnection();
-    return conn.getReplicationAPI()
-        .replicationStream()
-        .logical()
-        .withSlotName("cdc_replication_slot")
-        .withSlotOption("proto_version", 1)
-        .withSlotOption("publication_names", "cdc_publication")
-        .start();
   }
 
   // Extra check in place to ensure correct auto commit
