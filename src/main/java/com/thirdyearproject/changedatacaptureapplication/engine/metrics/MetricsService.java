@@ -7,8 +7,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class MetricsService {
 
-  @Setter
-  PipelineStatus pipelineStatus = PipelineStatus.NOT_RUNNING;
+  @Setter PipelineStatus pipelineStatus = PipelineStatus.NOT_RUNNING;
 
   public GetPipelineStatusResponse getPipelineStatus() {
     return GetPipelineStatusResponse.builder().status(pipelineStatus).build();

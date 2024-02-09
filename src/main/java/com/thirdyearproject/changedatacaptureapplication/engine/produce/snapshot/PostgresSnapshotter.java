@@ -24,8 +24,7 @@ public class PostgresSnapshotter extends Snapshotter {
   private static final String CREATE_REPLICATION_SLOT =
       "CREATE_REPLICATION_SLOT \"%s\" LOGICAL pgoutput";
 
-  private static final String CREATE_PUBLICATION =
-      "CREATE PUBLICATION \"%s\" FOR TABLE %s;";
+  private static final String CREATE_PUBLICATION = "CREATE PUBLICATION \"%s\" FOR TABLE %s;";
 
   private static final String SELECT_ALL = "SELECT * FROM %s";
 
@@ -39,7 +38,8 @@ public class PostgresSnapshotter extends Snapshotter {
   (Will Glynn, https://www.willglynn.com/2013/10/25/postgresql-snapshot-export/). We can then roll back once the snapshot is complete. */
   private JdbcConnection replicationSlotConnection;
 
-  public PostgresSnapshotter(ConnectionConfiguration connectionConfig, String publication, String replicationSlot) {
+  public PostgresSnapshotter(
+      ConnectionConfiguration connectionConfig, String publication, String replicationSlot) {
     super(new JdbcConnection(connectionConfig));
     this.replicationSlotConnection = new JdbcConnection(connectionConfig);
     this.publication = publication;
@@ -50,7 +50,8 @@ public class PostgresSnapshotter extends Snapshotter {
   protected void createSnapshotEnvironment(Set<TableIdentifier> tables) throws SQLException {
     var stmt = replicationSlotConnection.getConnection().createStatement();
 
-    var tableCsv = String.join(", ", tables.stream().map(TableIdentifier::getStringFormat).toList());
+    var tableCsv =
+        String.join(", ", tables.stream().map(TableIdentifier::getStringFormat).toList());
     var createPublicationSql = String.format(CREATE_PUBLICATION, publication, tableCsv);
     log.info("Creating Publication with Statement: {}", createPublicationSql);
     stmt.execute(createPublicationSql);

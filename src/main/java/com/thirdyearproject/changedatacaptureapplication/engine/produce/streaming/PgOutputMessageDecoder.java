@@ -9,8 +9,6 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Col
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnWithData;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.PostgresMetadata;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
-import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.PostgresMessageType;
-import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.PgOutputColumnMetadata;
 import com.thirdyearproject.changedatacaptureapplication.util.PostgresTypeUtils;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;

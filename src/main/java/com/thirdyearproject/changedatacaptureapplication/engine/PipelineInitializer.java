@@ -13,7 +13,8 @@ public class PipelineInitializer {
   private final PipelineFactory pipelineFactory;
   private Thread pipelineThread;
 
-  public PipelineInitializer(ChangeEventProducer changeEventProducer, MetricsService metricsServer) {
+  public PipelineInitializer(
+      ChangeEventProducer changeEventProducer, MetricsService metricsServer) {
     this.pipelineFactory = new PipelineFactory(changeEventProducer, metricsServer);
   }
 
