@@ -6,33 +6,40 @@ import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsS
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;
+import org.postgresql.core.BaseConnection;
 import org.postgresql.replication.PGReplicationStream;
 
 @Slf4j
 public class PostgresStreamer extends Streamer {
-  private static final String CREATE_PUBLICATION =
-      "CREATE PUBLICATION cdc_publication FOR ALL TABLES;";
-  private static final String CREATE_REPLICATION_SLOT =
-      "SELECT pg_create_logical_replication_slot('cdc_replication_slot', 'cdc_publication');";
 
   private final PgOutputMessageDecoder pgOutputMessageDecoder;
   private final JdbcConnection replicationConnection;
   private PGReplicationStream replicationStream;
+  private String replicationSlot;
+  private String publication;
 
-  public PostgresStreamer(ConnectionConfiguration connectionConfiguration) {
+  public PostgresStreamer(ConnectionConfiguration connectionConfiguration, String publication, String replicationSlot) {
     super(new JdbcConnection(connectionConfiguration));
     this.replicationConnection = new JdbcConnection(connectionConfiguration);
     this.pgOutputMessageDecoder = new PgOutputMessageDecoder(jdbcConnection);
+    this.publication = publication;
+    this.replicationSlot = replicationSlot;
   }
 
   @Override
   protected void initEnvironment() throws SQLException {
-    this.replicationStream = replicationConnection.getReplicationStream();
+    BaseConnection conn = (BaseConnection) replicationConnection.getConnection();
+    this.replicationStream = conn.getReplicationAPI()
+            .replicationStream()
+            .logical()
+            .withSlotName(replicationSlot)
+            .withSlotOption("proto_version", 1)
+            .withSlotOption("publication_names", publication)
+            .start();
   }
 
   @Override
-  protected void streamChanges(ChangeEventProducer changeEventProducer, MetricsService metricsService) {
-    try {
+  protected void streamChanges(ChangeEventProducer changeEventProducer, MetricsService metricsService) throws SQLException {
       while (!replicationStream.isClosed() && !Thread.interrupted()) {
         var message = replicationStream.readPending();
         if (message == null) {
@@ -44,22 +51,5 @@ public class PostgresStreamer extends Streamer {
           changeEventProducer.sendEvent(optionalEvent.get());
         }
       }
-    } catch (Exception e) {
-      log.error(e.getMessage(), e);
-    }
-  }
-
-  private void createPublication() throws SQLException {
-    log.info("Creating Publication with Statement: {}", CREATE_PUBLICATION);
-    try (var stmt = jdbcConnection.getConnection().createStatement()) {
-      stmt.execute(CREATE_PUBLICATION);
-    }
-  }
-
-  private void createReplicationSlot() throws SQLException {
-    log.info("Creating Replication Slot with Statement: {}", CREATE_REPLICATION_SLOT);
-    try (var stmt = jdbcConnection.getConnection().createStatement()) {
-      stmt.execute(CREATE_REPLICATION_SLOT);
-    }
   }
 }

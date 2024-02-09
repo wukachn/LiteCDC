@@ -1,6 +1,5 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.ConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.*;
@@ -23,33 +22,42 @@ public class PostgresSnapshotter extends Snapshotter {
   private static final String SET_TRANSACTION_SNAPSHOT = "SET TRANSACTION SNAPSHOT '%s'";
 
   private static final String CREATE_REPLICATION_SLOT =
-      "CREATE_REPLICATION_SLOT \"cdc_replication_slot\" LOGICAL pgoutput";
+      "CREATE_REPLICATION_SLOT \"%s\" LOGICAL pgoutput";
 
   private static final String CREATE_PUBLICATION =
-      "CREATE PUBLICATION cdc_publication FOR ALL TABLES;";
+      "CREATE PUBLICATION \"%s\" FOR TABLE %s;";
 
   private static final String SELECT_ALL = "SELECT * FROM %s";
 
   private PostgresSnapshotInfo snapshotInfo;
 
+  private String replicationSlot;
+
+  private String publication;
+
   /* We need to use a separate connection for the replication slot as "snapshots are tied to the life cycle of their associated transaction."
   (Will Glynn, https://www.willglynn.com/2013/10/25/postgresql-snapshot-export/). We can then roll back once the snapshot is complete. */
   private JdbcConnection replicationSlotConnection;
 
-  public PostgresSnapshotter(ConnectionConfiguration connectionConfig) {
+  public PostgresSnapshotter(ConnectionConfiguration connectionConfig, String publication, String replicationSlot) {
     super(new JdbcConnection(connectionConfig));
     this.replicationSlotConnection = new JdbcConnection(connectionConfig);
+    this.publication = publication;
+    this.replicationSlot = replicationSlot;
   }
 
   @Override
-  protected void createSnapshotEnvironment() throws SQLException {
-    log.info("Creating Publication with Statement: {}", CREATE_PUBLICATION);
+  protected void createSnapshotEnvironment(Set<TableIdentifier> tables) throws SQLException {
     var stmt = replicationSlotConnection.getConnection().createStatement();
-    stmt.execute(CREATE_PUBLICATION);
 
-    log.info("Creating snapshot replication slot with statement: {}", CREATE_REPLICATION_SLOT);
-    this.replicationSlotConnection.setAutoCommit(true);
-    stmt.execute(CREATE_REPLICATION_SLOT);
+    var tableCsv = String.join(", ", tables.stream().map(TableIdentifier::getStringFormat).toList());
+    var createPublicationSql = String.format(CREATE_PUBLICATION, publication, tableCsv);
+    log.info("Creating Publication with Statement: {}", createPublicationSql);
+    stmt.execute(createPublicationSql);
+
+    var createReplicationSlotSql = String.format(CREATE_REPLICATION_SLOT, replicationSlot);
+    log.info("Creating snapshot replication slot with statement: {}", createReplicationSlotSql);
+    stmt.execute(createReplicationSlotSql);
     var rs = stmt.getResultSet();
     if (rs.next()) {
       var walStartLsn = LogSequenceNumber.valueOf(rs.getString("consistent_point"));
@@ -108,8 +116,6 @@ public class PostgresSnapshotter extends Snapshotter {
           changeEventProducer.sendEvent(changeEvent);
         }
       }
-    } catch (JsonMappingException e) {
-      throw new RuntimeException(e);
     }
   }
 

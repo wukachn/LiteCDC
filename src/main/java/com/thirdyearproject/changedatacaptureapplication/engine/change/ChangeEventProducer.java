@@ -1,6 +1,5 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.change;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.kafka.KafkaProducerService;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +12,7 @@ public class ChangeEventProducer {
     this.kafkaProducerService = kafkaProducerService;
   }
 
-  public void sendEvent(ChangeEvent changeEvent) throws JsonMappingException {
+  public void sendEvent(ChangeEvent changeEvent) {
     var tableId = changeEvent.getMetadata().getTableId();
     kafkaProducerService.sendEvent(changeEvent, tableId);
   }
