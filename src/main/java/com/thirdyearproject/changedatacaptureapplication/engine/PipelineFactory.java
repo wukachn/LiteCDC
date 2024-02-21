@@ -8,17 +8,16 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class PipelineFactory {
   private final ChangeEventProducer changeEventProducer;
-  private final MetricsService metricsServer;
+  private final MetricsService metricsService;
 
   public Pipeline create(PipelineConfiguration config) {
-    var snapshotter = config.getSourceConfig().getSnapshotter();
-    var streamer = config.getSourceConfig().getStreamer();
+    var snapshotter = config.getSourceConfig().getSnapshotter(changeEventProducer, metricsService);
+    var streamer = config.getSourceConfig().getStreamer(changeEventProducer, metricsService);
     return Pipeline.builder()
         .pipelineConfiguration(config)
         .snapshotter(snapshotter)
         .streamer(streamer)
-        .changeEventProducer(changeEventProducer)
-        .metricsService(metricsServer)
+        .metricsService(metricsService)
         .build();
   }
 }

@@ -3,6 +3,7 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.CRUD;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
@@ -30,40 +31,41 @@ public class PgOutputMessageDecoder {
       LocalDate.of(2000, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
   private static final Map<Integer, List<ColumnDetails>> tableColumnMap = new HashMap();
   private static final Map<Integer, TableIdentifier> relationIdToTableId = new HashMap();
+  private final PostgresTransactionProcessor transactionProcessor;
   private JdbcConnection jdbcConnection;
-  private Long transactionId;
+  private Long currentTxId;
   private Instant transactionCommitTime;
 
-  public PgOutputMessageDecoder(JdbcConnection jdbcConnection) {
+  public PgOutputMessageDecoder(
+      JdbcConnection jdbcConnection, ChangeEventProducer changeEventProducer) {
     this.jdbcConnection = jdbcConnection;
+    this.transactionProcessor = new PostgresTransactionProcessor(changeEventProducer);
   }
 
-  public Optional<ChangeEvent> processNotEmptyMessage(ByteBuffer buffer, LogSequenceNumber lsn)
-      throws SQLException {
+  public void processNotEmptyMessage(ByteBuffer buffer, LogSequenceNumber lsn) throws SQLException {
     final PostgresMessageType messageType = PostgresMessageType.forType((char) buffer.get());
     switch (messageType) {
-      case BEGIN:
-        handleBeginMessage(buffer);
-        break;
-      case RELATION:
-        handleRelationMessage(buffer);
-        break;
-      case INSERT:
-        return decodeInsert(buffer, lsn);
-      case UPDATE:
-        return decodeUpdate(buffer, lsn);
-      case DELETE:
-        return decodeDelete(buffer, lsn);
-      default:
-        break;
+      case BEGIN -> handleBeginMessage(buffer);
+      case RELATION -> handleRelationMessage(buffer);
+      case INSERT -> transactionProcessor.process(decodeInsert(buffer, lsn));
+      case UPDATE -> transactionProcessor.process(decodeUpdate(buffer, lsn));
+      case DELETE -> transactionProcessor.process(decodeDelete(buffer, lsn));
+      case COMMIT -> transactionProcessor.commit(handleCommitMessage(buffer));
+      default -> {}
     }
-    return Optional.empty();
+  }
+
+  private LogSequenceNumber handleCommitMessage(ByteBuffer buffer) throws SQLException {
+    int flags = buffer.get(); // flags, currently unused
+    var lsn = buffer.getLong(); // LSN of the commit
+    var commitLsn = buffer.getLong();
+    return LogSequenceNumber.valueOf(commitLsn);
   }
 
   private void handleBeginMessage(ByteBuffer buffer) throws SQLException {
     var lsn = buffer.getLong();
     this.transactionCommitTime = PG_EPOCH.plus(buffer.getLong(), ChronoUnit.MICROS);
-    this.transactionId = Integer.toUnsignedLong(buffer.getInt());
+    this.currentTxId = Integer.toUnsignedLong(buffer.getInt());
   }
 
   private void handleRelationMessage(ByteBuffer buffer) throws SQLException {
@@ -128,27 +130,39 @@ public class PgOutputMessageDecoder {
     relationIdToTableId.put(relationId, tableId);
   }
 
-  private Optional<ChangeEvent> decodeInsert(ByteBuffer buffer, LogSequenceNumber lsn) {
+  private ChangeEvent decodeInsert(ByteBuffer buffer, LogSequenceNumber lsn) {
     int relationId = buffer.getInt();
     char tupleType = (char) buffer.get();
 
     var tableId = relationIdToTableId.get(relationId);
 
-    var metadata = PostgresMetadata.builder().tableId(tableId).op(CRUD.CREATE).lsn(lsn).build();
+    var metadata =
+        PostgresMetadata.builder()
+            .tableId(tableId)
+            .op(CRUD.CREATE)
+            .lsn(lsn)
+            .txId(currentTxId)
+            .build();
 
     var after = buildColumnData(relationId, buffer);
 
     var changeEvent = ChangeEvent.builder().metadata(metadata).before(null).after(after).build();
-    return Optional.of(changeEvent);
+    return changeEvent;
   }
 
-  private Optional<ChangeEvent> decodeUpdate(ByteBuffer buffer, LogSequenceNumber lsn) {
+  private ChangeEvent decodeUpdate(ByteBuffer buffer, LogSequenceNumber lsn) {
     int relationId = buffer.getInt();
     char tupleType = (char) buffer.get(); // N or (O or K)
 
     var tableId = relationIdToTableId.get(relationId);
 
-    var metadata = PostgresMetadata.builder().tableId(tableId).op(CRUD.UPDATE).lsn(lsn).build();
+    var metadata =
+        PostgresMetadata.builder()
+            .tableId(tableId)
+            .op(CRUD.UPDATE)
+            .lsn(lsn)
+            .txId(currentTxId)
+            .build();
 
     List<ColumnWithData> before;
     // Read before values if available. Otherwise, leave before empty.
@@ -165,22 +179,28 @@ public class PgOutputMessageDecoder {
 
     var changeEvent = ChangeEvent.builder().metadata(metadata).before(before).after(after).build();
 
-    return Optional.of(changeEvent);
+    return changeEvent;
   }
 
-  private Optional<ChangeEvent> decodeDelete(ByteBuffer buffer, LogSequenceNumber lsn) {
+  private ChangeEvent decodeDelete(ByteBuffer buffer, LogSequenceNumber lsn) {
     int relationId = buffer.getInt();
     char tupleType = (char) buffer.get();
 
     var tableId = relationIdToTableId.get(relationId);
 
-    var metadata = PostgresMetadata.builder().tableId(tableId).op(CRUD.DELETE).lsn(lsn).build();
+    var metadata =
+        PostgresMetadata.builder()
+            .tableId(tableId)
+            .op(CRUD.DELETE)
+            .lsn(lsn)
+            .txId(currentTxId)
+            .build();
 
     var before = buildColumnData(relationId, buffer);
 
     var changeEvent = ChangeEvent.builder().metadata(metadata).before(null).after(null).build();
 
-    return Optional.of(changeEvent);
+    return changeEvent;
   }
 
   private List<ColumnWithData> buildColumnData(Integer relationId, ByteBuffer buffer) {

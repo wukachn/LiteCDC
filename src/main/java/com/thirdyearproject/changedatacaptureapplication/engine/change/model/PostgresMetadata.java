@@ -1,16 +1,23 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.change.model;
 
 import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.postgresql.replication.LogSequenceNumber;
+import org.springframework.lang.Nullable;
 
 @SuperBuilder
 public class PostgresMetadata extends Metadata {
 
-  @Getter private LogSequenceNumber lsn;
+  @Getter @NonNull private LogSequenceNumber lsn;
+  @Setter @Nullable private LogSequenceNumber commitLsn;
+  private long txId;
 
   @Override
-  public Long getOffset() {
-    return lsn.asLong();
+  public String getOffset() {
+    var commitLsnString = String.format("%019d", (commitLsn != null) ? commitLsn.asLong() : 0);
+    var lsnString = String.format("%019d", lsn.asLong());
+    return String.format("%s~%s", commitLsnString, lsnString);
   }
 }

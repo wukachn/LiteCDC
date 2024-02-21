@@ -19,10 +19,14 @@ public class PostgresStreamer extends Streamer {
   private String publication;
 
   public PostgresStreamer(
-      ConnectionConfiguration connectionConfiguration, String publication, String replicationSlot) {
-    super(new JdbcConnection(connectionConfiguration));
+      ConnectionConfiguration connectionConfiguration,
+      ChangeEventProducer changeEventProducer,
+      MetricsService metricsService,
+      String publication,
+      String replicationSlot) {
+    super(new JdbcConnection(connectionConfiguration), metricsService);
     this.replicationConnection = new JdbcConnection(connectionConfiguration);
-    this.pgOutputMessageDecoder = new PgOutputMessageDecoder(jdbcConnection);
+    this.pgOutputMessageDecoder = new PgOutputMessageDecoder(jdbcConnection, changeEventProducer);
     this.publication = publication;
     this.replicationSlot = replicationSlot;
   }
@@ -41,18 +45,14 @@ public class PostgresStreamer extends Streamer {
   }
 
   @Override
-  protected void streamChanges(
-      ChangeEventProducer changeEventProducer, MetricsService metricsService) throws SQLException {
+  protected void streamChanges() throws SQLException {
     while (!replicationStream.isClosed() && !Thread.interrupted()) {
       var message = replicationStream.readPending();
       if (message == null) {
         continue;
       }
       var lsn = replicationStream.getLastReceiveLSN();
-      var optionalEvent = pgOutputMessageDecoder.processNotEmptyMessage(message, lsn);
-      if (optionalEvent.isPresent()) {
-        changeEventProducer.sendEvent(optionalEvent.get());
-      }
+      pgOutputMessageDecoder.processNotEmptyMessage(message, lsn);
     }
   }
 }

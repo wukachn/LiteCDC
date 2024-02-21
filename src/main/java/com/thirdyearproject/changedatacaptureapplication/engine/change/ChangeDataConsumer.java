@@ -55,12 +55,13 @@ public class ChangeDataConsumer implements Runnable {
     consumer.subscribe(topics);
     try {
       while (true) {
-        ConsumerRecords<String, ChangeEvent> consumerRecords = consumer.poll(100);
+        ConsumerRecords<String, ChangeEvent> consumerRecords = consumer.poll(1000);
         List<ChangeEvent> changeEvents =
             StreamSupport.stream(consumerRecords.spliterator(), false)
                 .map(ConsumerRecord::value)
                 .collect(Collectors.toList());
         eventProcessor.process(changeEvents);
+        consumer.commitSync(); // TODO: do i need this?
       }
     } catch (Exception e) {
       log.error("Consumer Error.", e);
