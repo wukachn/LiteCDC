@@ -1,7 +1,9 @@
 package com.thirdyearproject.changedatacaptureapplication.api.model.request.database.postgres;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.SourceConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot.PostgresSnapshotter;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot.Snapshotter;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.PostgresStreamer;
@@ -44,12 +46,24 @@ public class PostgresSourceConfiguration implements SourceConfiguration {
   }
 
   @Override
-  public Snapshotter getSnapshotter() {
-    return new PostgresSnapshotter(connectionConfig, getPublication(), getReplicationSlot());
+  public Snapshotter getSnapshotter(
+      ChangeEventProducer changeEventProducer, MetricsService metricsService) {
+    return new PostgresSnapshotter(
+        connectionConfig,
+        changeEventProducer,
+        metricsService,
+        getPublication(),
+        getReplicationSlot());
   }
 
   @Override
-  public Streamer getStreamer() {
-    return new PostgresStreamer(connectionConfig, getPublication(), getReplicationSlot());
+  public Streamer getStreamer(
+      ChangeEventProducer changeEventProducer, MetricsService metricsService) {
+    return new PostgresStreamer(
+        connectionConfig,
+        changeEventProducer,
+        metricsService,
+        getPublication(),
+        getReplicationSlot());
   }
 }

@@ -17,16 +17,20 @@ public abstract class Snapshotter {
 
   JdbcConnection jdbcConnection;
   Map<TableIdentifier, List<ColumnDetails>> tableColumnMap;
+  ChangeEventProducer changeEventProducer;
+  MetricsService metricsService;
 
-  public Snapshotter(JdbcConnection jdbcConnection) {
-    this.jdbcConnection = jdbcConnection;
-    this.tableColumnMap = new HashMap<>();
-  }
-
-  public void snapshot(
-      Set<TableIdentifier> tables,
+  public Snapshotter(
+      JdbcConnection jdbcConnection,
       ChangeEventProducer changeEventProducer,
       MetricsService metricsService) {
+    this.jdbcConnection = jdbcConnection;
+    this.tableColumnMap = new HashMap<>();
+    this.changeEventProducer = changeEventProducer;
+    this.metricsService = metricsService;
+  }
+
+  public void snapshot(Set<TableIdentifier> tables) {
     log.info(
         String.format(
             "Starting snapshot on the following tables: %s",
@@ -40,7 +44,7 @@ public abstract class Snapshotter {
       captureStructure(tables);
 
       log.info("Step 3: Snapshotting content of tables");
-      snapshotTables(tables, changeEventProducer);
+      snapshotTables(tables);
 
       log.info("Snapshot Complete.");
       snapshotComplete();
@@ -54,8 +58,7 @@ public abstract class Snapshotter {
 
   protected abstract void captureStructure(Set<TableIdentifier> tables) throws SQLException;
 
-  protected abstract void snapshotTables(
-      Set<TableIdentifier> tables, ChangeEventProducer changeEventProducer) throws SQLException;
+  protected abstract void snapshotTables(Set<TableIdentifier> tables) throws SQLException;
 
   protected abstract void snapshotComplete() throws SQLException;
 }

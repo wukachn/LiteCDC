@@ -9,6 +9,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Col
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnWithData;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.PostgresMetadata;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Set;
@@ -39,8 +40,12 @@ public class PostgresSnapshotter extends Snapshotter {
   private JdbcConnection replicationSlotConnection;
 
   public PostgresSnapshotter(
-      ConnectionConfiguration connectionConfig, String publication, String replicationSlot) {
-    super(new JdbcConnection(connectionConfig));
+      ConnectionConfiguration connectionConfig,
+      ChangeEventProducer changeEventProducer,
+      MetricsService metricsService,
+      String publication,
+      String replicationSlot) {
+    super(new JdbcConnection(connectionConfig), changeEventProducer, metricsService);
     this.replicationSlotConnection = new JdbcConnection(connectionConfig);
     this.publication = publication;
     this.replicationSlot = replicationSlot;
@@ -92,8 +97,7 @@ public class PostgresSnapshotter extends Snapshotter {
   }
 
   @Override
-  protected void snapshotTables(
-      Set<TableIdentifier> tables, ChangeEventProducer changeEventProducer) throws SQLException {
+  protected void snapshotTables(Set<TableIdentifier> tables) throws SQLException {
     try (var conn = jdbcConnection.getConnection();
         var stmt = conn.createStatement()) {
       for (var table : tables) {

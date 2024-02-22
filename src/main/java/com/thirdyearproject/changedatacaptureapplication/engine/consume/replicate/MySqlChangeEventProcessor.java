@@ -85,7 +85,8 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
                 Collectors.groupingBy(
                     event -> event.getMetadata().getTableId().getStringFormat(),
                     Collectors.minBy(
-                        Comparator.comparingLong(event -> event.getMetadata().getOffset()))))
+                        Comparator.comparing(
+                            changeEvent -> changeEvent.getMetadata().getOffset()))))
             .values()
             .stream()
             .filter(Optional::isPresent)
@@ -109,7 +110,8 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
         changeEvent.getAfter().stream()
             .map(column -> buildCreateTableColumnString(column.getDetails()))
             .toList();
-    var columnCSV = String.format("%s,%s", String.join(",", columnValues), "cdc_last_updated INT");
+    var columnCSV =
+        String.format("%s,%s", String.join(",", columnValues), "cdc_last_updated varchar(60)");
 
     return String.format("CREATE TABLE IF NOT EXISTS %s (%s);", table, columnCSV);
   }
@@ -204,7 +206,8 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
         changeEvent.getAfter().stream().map(column -> quoteIfString(column.getValue())).toList();
     var valuesCSV =
         String.format(
-            "%s,%s", String.join(",", columnValues), changeEvent.getMetadata().getOffset());
+            "%s,%s",
+            String.join(",", columnValues), quoteIfString(changeEvent.getMetadata().getOffset()));
 
     var updateDetails =
         changeEvent.getAfter().stream()

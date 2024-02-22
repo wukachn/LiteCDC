@@ -18,7 +18,15 @@ public class ChangeEvent implements Comparable<ChangeEvent> {
 
   @Override
   public int compareTo(ChangeEvent otherEvent) {
-    return Long.compare(this.getMetadata().getOffset(), otherEvent.getMetadata().getOffset());
+    var theseParts = this.getMetadata().getOffset().split("~");
+    var otherParts = otherEvent.getMetadata().getOffset().split("~");
+    for (var i = 1; i < theseParts.length; i++) {
+      var result = Long.compare(Long.valueOf(theseParts[i]), Long.valueOf(otherParts[i]));
+      if (result != 0) {
+        return result;
+      }
+    }
+    return 0;
   }
 
   public List<ColumnDetails> getAfterColumnDetails() {

@@ -1,7 +1,6 @@
 package com.thirdyearproject.changedatacaptureapplication.engine;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.kafka.KafkaConsumerManager;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.PipelineStatus;
@@ -17,7 +16,6 @@ public class Pipeline implements Closeable, Runnable {
   PipelineConfiguration pipelineConfiguration;
   Snapshotter snapshotter;
   Streamer streamer;
-  ChangeEventProducer changeEventProducer;
   MetricsService metricsService;
 
   @Override
@@ -37,10 +35,10 @@ public class Pipeline implements Closeable, Runnable {
       }
 
       metricsService.setPipelineStatus(PipelineStatus.SNAPSHOTTING);
-      snapshotter.snapshot(tables, changeEventProducer, metricsService);
+      snapshotter.snapshot(tables);
 
       metricsService.setPipelineStatus(PipelineStatus.STREAMING);
-      streamer.stream(changeEventProducer, metricsService);
+      streamer.stream();
     } finally {
       metricsService.setPipelineStatus(PipelineStatus.NOT_RUNNING);
     }

@@ -8,5 +8,5 @@ public abstract class Metadata {
   @Getter private TableIdentifier tableId;
   @Getter private CRUD op;
 
-  public abstract Long getOffset();
+  public abstract String getOffset();
 }
