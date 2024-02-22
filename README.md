@@ -64,3 +64,14 @@ Decided to switch to using json messages. Avro was causing too many issues and I
 JSON should offer a better understanding when people try the project for the first time, allowing for the actual change data to
 be used in other applications. The addition of the schema registry for avro makes the project harder to quickly pick up. 
 There is much less to set up now.
+
+
+insert into towns (
+code, article, name, department
+)
+select
+left(md5(i::text), 10),
+md5(random()::text),
+md5(random()::text),
+left(md5(random()::text), 4)
+from generate_series(1, 10000000) s(i)

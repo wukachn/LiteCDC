@@ -10,6 +10,8 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Col
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.PostgresMetadata;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
+import com.thirdyearproject.changedatacaptureapplication.engine.produce.PostgresReplicationConnection;
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Set;
@@ -37,7 +39,7 @@ public class PostgresSnapshotter extends Snapshotter {
 
   /* We need to use a separate connection for the replication slot as "snapshots are tied to the life cycle of their associated transaction."
   (Will Glynn, https://www.willglynn.com/2013/10/25/postgresql-snapshot-export/). We can then roll back once the snapshot is complete. */
-  private JdbcConnection replicationSlotConnection;
+  private PostgresReplicationConnection replicationSlotConnection;
 
   public PostgresSnapshotter(
       ConnectionConfiguration connectionConfig,
@@ -46,33 +48,34 @@ public class PostgresSnapshotter extends Snapshotter {
       String publication,
       String replicationSlot) {
     super(new JdbcConnection(connectionConfig), changeEventProducer, metricsService);
-    this.replicationSlotConnection = new JdbcConnection(connectionConfig);
+    this.replicationSlotConnection = new PostgresReplicationConnection(connectionConfig);
     this.publication = publication;
     this.replicationSlot = replicationSlot;
   }
 
   @Override
   protected void createSnapshotEnvironment(Set<TableIdentifier> tables) throws SQLException {
-    var stmt = replicationSlotConnection.getConnection().createStatement();
+    try (var stmt = replicationSlotConnection.getConnection().createStatement()) {
+      var tableCsv =
+          String.join(", ", tables.stream().map(TableIdentifier::getStringFormat).toList());
+      var createPublicationSql = String.format(CREATE_PUBLICATION, publication, tableCsv);
+      log.info("Creating Publication with Statement: {}", createPublicationSql);
+      stmt.execute(createPublicationSql);
 
-    var tableCsv =
-        String.join(", ", tables.stream().map(TableIdentifier::getStringFormat).toList());
-    var createPublicationSql = String.format(CREATE_PUBLICATION, publication, tableCsv);
-    log.info("Creating Publication with Statement: {}", createPublicationSql);
-    stmt.execute(createPublicationSql);
-
-    var createReplicationSlotSql = String.format(CREATE_REPLICATION_SLOT, replicationSlot);
-    log.info("Creating snapshot replication slot with statement: {}", createReplicationSlotSql);
-    stmt.execute(createReplicationSlotSql);
-    var rs = stmt.getResultSet();
-    if (rs.next()) {
-      var walStartLsn = LogSequenceNumber.valueOf(rs.getString("consistent_point"));
-      var snapshotName = rs.getString("snapshot_name");
-      this.snapshotInfo =
-          PostgresSnapshotInfo.builder()
-              .walStartLsn(walStartLsn)
-              .snapshotName(snapshotName)
-              .build();
+      var createReplicationSlotSql = String.format(CREATE_REPLICATION_SLOT, replicationSlot);
+      log.info("Creating snapshot replication slot with statement: {}", createReplicationSlotSql);
+      stmt.execute(createReplicationSlotSql);
+      try (var rs = stmt.getResultSet()) {
+        if (rs.next()) {
+          var walStartLsn = LogSequenceNumber.valueOf(rs.getString("consistent_point"));
+          var snapshotName = rs.getString("snapshot_name");
+          this.snapshotInfo =
+              PostgresSnapshotInfo.builder()
+                  .walStartLsn(walStartLsn)
+                  .snapshotName(snapshotName)
+                  .build();
+        }
+      }
     }
 
     this.jdbcConnection.setAutoCommit(false);
@@ -98,34 +101,48 @@ public class PostgresSnapshotter extends Snapshotter {
 
   @Override
   protected void snapshotTables(Set<TableIdentifier> tables) throws SQLException {
-    try (var conn = jdbcConnection.getConnection();
-        var stmt = conn.createStatement()) {
+    var lastPeriodicProcessingTime = System.currentTimeMillis();
+    jdbcConnection.setAutoCommit(false);
+    try (var stmt = jdbcConnection.getConnection().createStatement()) {
+      stmt.setFetchSize(1024);
       for (var table : tables) {
         var columnList = tableColumnMap.get(table);
-        var rs = stmt.executeQuery(String.format(SELECT_ALL, table.getStringFormat()));
-        while (rs.next()) {
-          var after = new ArrayList<ColumnWithData>();
-          for (var columnDetails : columnList) {
-            var value = getFromResultSet(rs, columnDetails);
-            after.add(ColumnWithData.builder().details(columnDetails).value(value).build());
-          }
-          var metadata =
-              PostgresMetadata.builder()
-                  .lsn(snapshotInfo.getWalStartLsn())
-                  .op(CRUD.READ)
-                  .tableId(table)
-                  .build();
-          var changeEvent =
-              ChangeEvent.builder().metadata(metadata).before(null).after(after).build();
+        var rowsSnapshot = 0;
+        try (var rs = stmt.executeQuery(String.format(SELECT_ALL, table.getStringFormat()))) {
+          while (rs.next()) {
+            var after = new ArrayList<ColumnWithData>();
+            for (var columnDetails : columnList) {
+              var value = getFromResultSet(rs, columnDetails);
+              after.add(ColumnWithData.builder().details(columnDetails).value(value).build());
+            }
+            var metadata =
+                PostgresMetadata.builder()
+                    .lsn(snapshotInfo.getWalStartLsn())
+                    .op(CRUD.READ)
+                    .tableId(table)
+                    .build();
+            var changeEvent =
+                ChangeEvent.builder().metadata(metadata).before(null).after(after).build();
+            changeEventProducer.sendEvent(changeEvent);
 
-          changeEventProducer.sendEvent(changeEvent);
+            rowsSnapshot += 1;
+            var currentTime = System.currentTimeMillis();
+            if (currentTime - lastPeriodicProcessingTime >= 500) {
+              lastPeriodicProcessingTime = currentTime;
+              metricsService.updateSnapshotRows(table, rowsSnapshot, false);
+            }
+          }
         }
+        metricsService.updateSnapshotRows(table, rowsSnapshot, true);
       }
     }
   }
 
   @Override
-  protected void snapshotComplete() throws SQLException {}
+  protected void snapshotComplete() throws SQLException, IOException {
+    replicationSlotConnection.close();
+    jdbcConnection.close();
+  }
 
   private Object getFromResultSet(ResultSet rs, ColumnDetails columnDetails) throws SQLException {
     switch (columnDetails.getSqlType()) {

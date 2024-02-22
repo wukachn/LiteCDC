@@ -5,6 +5,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import java.sql.SQLException;
+import com.thirdyearproject.changedatacaptureapplication.engine.produce.PostgresReplicationConnection;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.core.BaseConnection;
 import org.postgresql.replication.PGReplicationStream;
@@ -25,7 +26,7 @@ public class PostgresStreamer extends Streamer {
       String publication,
       String replicationSlot) {
     super(new JdbcConnection(connectionConfiguration), metricsService);
-    this.replicationConnection = new JdbcConnection(connectionConfiguration);
+    this.replicationConnection = new PostgresReplicationConnection(connectionConfiguration);
     this.pgOutputMessageDecoder = new PgOutputMessageDecoder(jdbcConnection, changeEventProducer);
     this.publication = publication;
     this.replicationSlot = replicationSlot;

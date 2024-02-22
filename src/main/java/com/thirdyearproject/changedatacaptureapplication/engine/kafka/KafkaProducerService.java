@@ -33,14 +33,14 @@ public class KafkaProducerService {
     future.whenComplete(
         (result, ex) -> {
           if (ex == null) {
-            log.info(
-                "Sent message=["
-                    + changeEvent
-                    + "] with offset=["
-                    + result.getRecordMetadata().offset()
-                    + "] with topic=["
-                    + result.getRecordMetadata().topic()
-                    + "]");
+            /*log.info(
+            "Sent message=["
+                + changeEvent
+                + "] with offset=["
+                + result.getRecordMetadata().offset()
+                + "] with topic=["
+                + result.getRecordMetadata().topic()
+                + "]");*/
           } else {
             log.error("Unable to send message=[" + changeEvent + "] due to : " + ex.getMessage());
           }
