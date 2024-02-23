@@ -1,10 +1,10 @@
 {
 	"info": {
-		"_postman_id": "f7cd65de-488e-43b8-b7b3-46f1ff97ee0d",
+		"_postman_id": "64a80089-4bf1-4e65-9f2d-f8740f6f385e",
 		"name": "Postman Collection",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "30248514",
-		"_collection_link": "https://lively-space-813403.postman.co/workspace/a~38b1f74c-0551-4858-8229-36a6eea72640/collection/30248514-f7cd65de-488e-43b8-b7b3-46f1ff97ee0d?action=share&source=collection_link&creator=30248514"
+		"_collection_link": "https://lively-space-813403.postman.co/workspace/a~38b1f74c-0551-4858-8229-36a6eea72640/collection/30248514-64a80089-4bf1-4e65-9f2d-f8740f6f385e?action=share&source=collection_link&creator=30248514"
 	},
 	"item": [
 		{
@@ -68,6 +68,26 @@
 					"path": [
 						"pipeline",
 						"status"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Snapshot Metrics",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/pipeline/metrics/snapshot",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"pipeline",
+						"metrics",
+						"snapshot"
 					]
 				}
 			},
