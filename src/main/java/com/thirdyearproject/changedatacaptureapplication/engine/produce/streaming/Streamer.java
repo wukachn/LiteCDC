@@ -18,6 +18,7 @@ public abstract class Streamer {
       initEnvironment();
       streamChanges();
     } catch (SQLException e) {
+      metricsService.clear();
       throw new RuntimeException(e);
     }
   }

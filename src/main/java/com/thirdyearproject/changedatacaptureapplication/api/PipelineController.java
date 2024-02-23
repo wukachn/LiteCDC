@@ -2,6 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.api;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetPipelineStatusResponse;
+import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetSnapshotMetricsResponse;
 import com.thirdyearproject.changedatacaptureapplication.engine.PipelineInitializer;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import lombok.extern.slf4j.Slf4j;
@@ -40,5 +41,10 @@ public class PipelineController {
   @GetMapping("/status")
   public GetPipelineStatusResponse getPipelineStatus() {
     return metricsService.getPipelineStatus();
+  }
+
+  @GetMapping("/metrics/snapshot")
+  public GetSnapshotMetricsResponse getSnapshotMetrics() {
+    return metricsService.getSnapshotMetrics();
   }
 }

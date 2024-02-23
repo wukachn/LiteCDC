@@ -1,5 +1,13 @@
 CREATE TABLE IF NOT EXISTS newtable1 (position INT PRIMARY KEY, name VARCHAR(16));
 CREATE TABLE IF NOT EXISTS newtable2 (position INT PRIMARY KEY, name VARCHAR(16));
+CREATE TABLE Towns (
+  id SERIAL UNIQUE NOT NULL,
+  code VARCHAR(10) NOT NULL,
+  article TEXT,
+  name TEXT NOT NULL,
+  department VARCHAR(4) NOT NULL,
+  UNIQUE (code, department)
+);
 
 DO $$
 DECLARE

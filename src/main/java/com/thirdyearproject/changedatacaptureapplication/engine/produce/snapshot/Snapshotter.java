@@ -5,6 +5,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEve
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,7 @@ public abstract class Snapshotter {
             "Starting snapshot on the following tables: %s",
             String.join(", ", tables.stream().map(TableIdentifier::getStringFormat).toList())));
 
+    metricsService.startingSnapshot();
     try {
       log.info("Step 1: Setting up start point of snapshot.");
       createSnapshotEnvironment(tables);
@@ -48,9 +50,11 @@ public abstract class Snapshotter {
 
       log.info("Snapshot Complete.");
       snapshotComplete();
-    } catch (SQLException e) {
+    } catch (SQLException | IOException e) {
+      metricsService.clear();
       throw new RuntimeException(e);
     }
+    metricsService.completingSnapshot();
   }
 
   protected abstract void createSnapshotEnvironment(Set<TableIdentifier> tables)
@@ -60,5 +64,5 @@ public abstract class Snapshotter {
 
   protected abstract void snapshotTables(Set<TableIdentifier> tables) throws SQLException;
 
-  protected abstract void snapshotComplete() throws SQLException;
+  protected abstract void snapshotComplete() throws SQLException, IOException;
 }

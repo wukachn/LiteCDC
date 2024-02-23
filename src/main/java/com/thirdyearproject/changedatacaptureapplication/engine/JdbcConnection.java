@@ -18,9 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 // TODO: replace with ability to have multiple connections in parallel.
 @Slf4j
 public class JdbcConnection implements Closeable {
-  private final ConnectionConfiguration connectionConfig;
-
-  private Connection connection;
+  protected final ConnectionConfiguration connectionConfig;
+  protected Connection connection;
 
   public JdbcConnection(ConnectionConfiguration connectionConfig) {
     this.connectionConfig = connectionConfig;
@@ -90,7 +89,9 @@ public class JdbcConnection implements Closeable {
   @Override
   public void close() throws IOException {
     try {
-      connection.close();
+      if (connection != null && !connection.isClosed()) {
+        connection.close();
+      }
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }

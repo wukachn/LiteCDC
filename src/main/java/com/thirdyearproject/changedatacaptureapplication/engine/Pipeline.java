@@ -19,7 +19,9 @@ public class Pipeline implements Closeable, Runnable {
   MetricsService metricsService;
 
   @Override
-  public void close() throws IOException {}
+  public void close() throws IOException {
+    metricsService.clear();
+  }
 
   @Override
   public void run() {
