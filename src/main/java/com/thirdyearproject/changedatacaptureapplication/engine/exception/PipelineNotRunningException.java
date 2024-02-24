@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.engine;
+package com.thirdyearproject.changedatacaptureapplication.engine.exception;
 
 public class PipelineNotRunningException extends RuntimeException {
   public PipelineNotRunningException(String msg) {

@@ -1,7 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.api;
 
-import com.thirdyearproject.changedatacaptureapplication.engine.PipelineConflictException;
-import com.thirdyearproject.changedatacaptureapplication.engine.PipelineNotRunningException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineConflictException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

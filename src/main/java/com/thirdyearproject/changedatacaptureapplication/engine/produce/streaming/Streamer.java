@@ -1,7 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
-import com.thirdyearproject.changedatacaptureapplication.engine.PipelineException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineException;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;

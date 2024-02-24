@@ -1,7 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
-import com.thirdyearproject.changedatacaptureapplication.engine.PipelineException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineException;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;

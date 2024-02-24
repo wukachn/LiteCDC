@@ -2,7 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine.metrics;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetPipelineStatusResponse;
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetSnapshotMetricsResponse;
-import com.thirdyearproject.changedatacaptureapplication.engine.PipelineNotRunningException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;

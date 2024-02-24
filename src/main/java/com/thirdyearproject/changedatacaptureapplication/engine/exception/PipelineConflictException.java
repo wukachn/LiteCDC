@@ -1,4 +1,4 @@
-package com.thirdyearproject.changedatacaptureapplication.engine;
+package com.thirdyearproject.changedatacaptureapplication.engine.exception;
 
 public class PipelineConflictException extends RuntimeException {
 
