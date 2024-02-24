@@ -7,9 +7,10 @@ import com.thirdyearproject.changedatacaptureapplication.engine.metrics.Pipeline
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot.Snapshotter;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.Streamer;
 import java.io.Closeable;
-import java.io.IOException;
 import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Builder
 public class Pipeline implements Closeable, Runnable {
 
@@ -19,7 +20,7 @@ public class Pipeline implements Closeable, Runnable {
   MetricsService metricsService;
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     metricsService.clear();
   }
 
@@ -41,6 +42,9 @@ public class Pipeline implements Closeable, Runnable {
 
       metricsService.setPipelineStatus(PipelineStatus.STREAMING);
       streamer.stream();
+    } catch (Exception e) {
+      log.error("Pipeline had stopped unexpectedly.", e);
+      close();
     } finally {
       metricsService.setPipelineStatus(PipelineStatus.NOT_RUNNING);
     }

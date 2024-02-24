@@ -2,6 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine.metrics;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetPipelineStatusResponse;
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetSnapshotMetricsResponse;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -27,6 +28,9 @@ public class MetricsService {
   }
 
   public GetSnapshotMetricsResponse getSnapshotMetrics() {
+    if (pipelineStatus == PipelineStatus.NOT_RUNNING) {
+      throw new PipelineNotRunningException("Pipeline not running.");
+    }
     return GetSnapshotMetricsResponse.builder()
         .completed(isSnapshotComplete())
         .durationSeconds(getSnapshotDurationSeconds())
@@ -47,6 +51,7 @@ public class MetricsService {
   }
 
   public void clear() {
+    this.pipelineStatus = PipelineStatus.NOT_RUNNING;
     this.snapshotStartTime = null;
     this.snapshotEndTime = null;
     this.tableTracker = new HashMap<>();

@@ -4,8 +4,8 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.request.datab
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
-import java.sql.SQLException;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.PostgresReplicationConnection;
+import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.core.BaseConnection;
 import org.postgresql.replication.PGReplicationStream;
@@ -47,7 +47,7 @@ public class PostgresStreamer extends Streamer {
 
   @Override
   protected void streamChanges() throws SQLException {
-    while (!replicationStream.isClosed() && !Thread.interrupted()) {
+    while (!replicationStream.isClosed()) {
       var message = replicationStream.readPending();
       if (message == null) {
         continue;

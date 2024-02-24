@@ -1,9 +1,12 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineException;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import java.sql.SQLException;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public abstract class Streamer {
   JdbcConnection jdbcConnection;
   MetricsService metricsService;
@@ -13,13 +16,13 @@ public abstract class Streamer {
     this.metricsService = metricsService;
   }
 
-  public void stream() {
+  public void stream() throws PipelineException {
+    log.info("Starting to stream changes.");
     try {
       initEnvironment();
       streamChanges();
-    } catch (SQLException e) {
-      metricsService.clear();
-      throw new RuntimeException(e);
+    } catch (Exception e) {
+      throw new PipelineException("Pipeline failed during streaming phase.", e);
     }
   }
 
