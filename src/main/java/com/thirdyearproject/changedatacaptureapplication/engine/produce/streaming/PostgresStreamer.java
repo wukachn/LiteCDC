@@ -47,7 +47,7 @@ public class PostgresStreamer extends Streamer {
 
   @Override
   protected void streamChanges() throws SQLException {
-    while (!replicationStream.isClosed() && !Thread.interrupted()) {
+    while (!replicationStream.isClosed()) {
       var message = replicationStream.readPending();
       if (message == null) {
         continue;

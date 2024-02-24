@@ -40,7 +40,7 @@ public class PipelineInitializer {
       log.error("Pipeline not running.");
       throw new PipelineNotRunningException("Pipeline not running.");
     }
-    pipelineThread.interrupt();
+    pipelineThread.stop();
     try {
       pipelineThread.join();
     } catch (InterruptedException e) {

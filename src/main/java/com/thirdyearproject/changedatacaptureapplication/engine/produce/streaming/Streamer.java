@@ -4,7 +4,9 @@ import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.PipelineException;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import java.sql.SQLException;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public abstract class Streamer {
   JdbcConnection jdbcConnection;
   MetricsService metricsService;
@@ -15,6 +17,7 @@ public abstract class Streamer {
   }
 
   public void stream() throws PipelineException {
+    log.info("Starting to stream changes.");
     try {
       initEnvironment();
       streamChanges();
