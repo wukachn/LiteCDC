@@ -19,6 +19,10 @@ public class PipelineInitializer {
   }
 
   public synchronized void runPipeline(PipelineConfiguration config) {
+    if (pipelineThread != null && pipelineThread.getState() == Thread.State.TERMINATED) {
+      pipelineThread = null;
+    }
+
     log.info("Attempting to start pipeline.");
     if (pipelineThread != null) {
       log.error("A pipeline is already running.");
@@ -32,9 +36,9 @@ public class PipelineInitializer {
 
   public synchronized void haltPipeline() {
     log.info("Attempting to halt pipeline.");
-    if (pipelineThread == null) {
-      log.error("No pipeline is running.");
-      throw new PipelineConflictException("No pipeline is running.");
+    if (pipelineThread == null || pipelineThread.getState() == Thread.State.TERMINATED) {
+      log.error("Pipeline not running.");
+      throw new PipelineNotRunningException("Pipeline not running.");
     }
     pipelineThread.interrupt();
     try {

@@ -1,6 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
+import com.thirdyearproject.changedatacaptureapplication.engine.PipelineException;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
@@ -31,7 +32,7 @@ public abstract class Snapshotter {
     this.metricsService = metricsService;
   }
 
-  public void snapshot(Set<TableIdentifier> tables) {
+  public void snapshot(Set<TableIdentifier> tables) throws PipelineException {
     log.info(
         String.format(
             "Starting snapshot on the following tables: %s",
@@ -50,9 +51,8 @@ public abstract class Snapshotter {
 
       log.info("Snapshot Complete.");
       snapshotComplete();
-    } catch (SQLException | IOException e) {
-      metricsService.clear();
-      throw new RuntimeException(e);
+    } catch (Exception e) {
+      throw new PipelineException("Pipeline failed during snapshotting phase.", e);
     }
     metricsService.completingSnapshot();
   }

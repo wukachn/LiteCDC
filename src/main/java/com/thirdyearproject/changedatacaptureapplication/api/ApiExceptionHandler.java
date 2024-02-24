@@ -1,6 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.api;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.PipelineConflictException;
+import com.thirdyearproject.changedatacaptureapplication.engine.PipelineNotRunningException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,5 +18,12 @@ public class ApiExceptionHandler {
   public ResponseEntity<ErrorMessage> handleConflict(PipelineConflictException ex) {
     var errorMessage = ErrorMessage.builder().message(ex.getMessage()).build();
     return new ResponseEntity<>(errorMessage, HttpStatus.CONFLICT);
+  }
+
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  @ExceptionHandler(PipelineNotRunningException.class)
+  public ResponseEntity<ErrorMessage> handleConflict(PipelineNotRunningException ex) {
+    var errorMessage = ErrorMessage.builder().message(ex.getMessage()).build();
+    return new ResponseEntity<>(errorMessage, HttpStatus.NOT_FOUND);
   }
 }
