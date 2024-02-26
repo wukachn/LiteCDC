@@ -27,6 +27,7 @@ public class Pipeline implements Closeable, Runnable {
   @Override
   public void run() {
     try {
+      metricsService.startingPipeline();
       metricsService.setPipelineStatus(PipelineStatus.STARTING);
       var tables = pipelineConfiguration.getSourceConfig().getTables();
       if (pipelineConfiguration.getDestinationConfig() != null) {

@@ -1,9 +1,11 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.metrics;
 
+import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetMetricsResponse;
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetPipelineStatusResponse;
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetSnapshotMetricsResponse;
-import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.CRUD;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -21,7 +23,9 @@ public class MetricsService {
   @Setter PipelineStatus pipelineStatus = PipelineStatus.NOT_RUNNING;
   OffsetDateTime snapshotStartTime;
   OffsetDateTime snapshotEndTime;
-  Map<TableIdentifier, Pair<Long, Boolean>> tableTracker = new HashMap<>();
+  Map<TableIdentifier, Pair<Long, Boolean>> snapshotTracker = new HashMap<>();
+  Map<TableIdentifier, CrudCount> crudTracker = new HashMap<>();
+  OffsetDateTime pipelineStartTime;
 
   public GetPipelineStatusResponse getPipelineStatus() {
     return GetPipelineStatusResponse.builder().status(pipelineStatus).build();
@@ -38,8 +42,22 @@ public class MetricsService {
         .build();
   }
 
+  public GetMetricsResponse getMetrics() {
+    if (pipelineStatus == PipelineStatus.NOT_RUNNING) {
+      throw new PipelineNotRunningException("Pipeline not running.");
+    }
+    return GetMetricsResponse.builder()
+        .pipelineStartTime(pipelineStartTime.toEpochSecond())
+        .tables(getTableCrudCounts())
+        .build();
+  }
+
   public void updateSnapshotRows(TableIdentifier tableId, long rows, boolean completed) {
-    tableTracker.put(tableId, Pair.with(rows, completed));
+    snapshotTracker.put(tableId, Pair.with(rows, completed));
+  }
+
+  public void startingPipeline() {
+    this.pipelineStartTime = OffsetDateTime.now(ZoneOffset.UTC);
   }
 
   public void startingSnapshot() {
@@ -54,7 +72,9 @@ public class MetricsService {
     this.pipelineStatus = PipelineStatus.NOT_RUNNING;
     this.snapshotStartTime = null;
     this.snapshotEndTime = null;
-    this.tableTracker = new HashMap<>();
+    this.snapshotTracker = new HashMap<>();
+    this.pipelineStartTime = null;
+    this.crudTracker = new HashMap<>();
   }
 
   private boolean isSnapshotComplete() {
@@ -77,7 +97,7 @@ public class MetricsService {
 
   private List<TableRowsSnapshot> getRowsSnapshot() {
     List<TableRowsSnapshot> rowsSnapshot = new ArrayList<>();
-    for (var entry : tableTracker.entrySet()) {
+    for (var entry : snapshotTracker.entrySet()) {
       var valuePair = entry.getValue();
       rowsSnapshot.add(
           TableRowsSnapshot.builder()
@@ -87,5 +107,23 @@ public class MetricsService {
               .build());
     }
     return rowsSnapshot;
+  }
+
+  private List<TableCRUD> getTableCrudCounts() {
+    List<TableCRUD> crudCounts = new ArrayList<>();
+    for (var entry : crudTracker.entrySet()) {
+      crudCounts.add(
+          TableCRUD.builder().table(entry.getKey()).operationCounts(entry.getValue()).build());
+    }
+    return crudCounts;
+  }
+
+  public void trackEvent(TableIdentifier tableIdentifier, CRUD op) {
+    var crudCount = crudTracker.get(tableIdentifier);
+    if (crudCount == null) {
+      crudCount = CrudCount.builder().build();
+    }
+    crudCount.incrementOperation(op);
+    crudTracker.put(tableIdentifier, crudCount);
   }
 }

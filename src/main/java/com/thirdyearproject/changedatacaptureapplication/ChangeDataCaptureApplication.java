@@ -2,6 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.kafka.KafkaProducerService;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -16,7 +17,8 @@ public class ChangeDataCaptureApplication {
   }
 
   @Bean
-  ChangeEventProducer changeEventProducer(KafkaProducerService kafkaProducerService) {
-    return new ChangeEventProducer(kafkaProducerService);
+  ChangeEventProducer changeEventProducer(
+      KafkaProducerService kafkaProducerService, MetricsService metricsService) {
+    return new ChangeEventProducer(kafkaProducerService, metricsService);
   }
 }
