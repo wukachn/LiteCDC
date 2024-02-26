@@ -10,4 +10,5 @@ import lombok.Value;
 public class GetMetricsResponse {
   long pipelineStartTime;
   List<TableCRUD> tables;
+  long producerConsumerTimeLagMs;
 }

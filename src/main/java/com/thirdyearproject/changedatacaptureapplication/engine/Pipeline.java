@@ -35,7 +35,8 @@ public class Pipeline implements Closeable, Runnable {
         var topicPrefix = pipelineConfiguration.getKafkaConfig().getTopicPrefix();
         var eventProcessor =
             pipelineConfiguration.getDestinationConfig().createChangeEventProcessor();
-        KafkaConsumerManager.createConsumers(bootstrapServer, topicPrefix, tables, eventProcessor);
+        KafkaConsumerManager.createConsumers(
+            bootstrapServer, topicPrefix, tables, eventProcessor, metricsService);
       }
 
       metricsService.setPipelineStatus(PipelineStatus.SNAPSHOTTING);
