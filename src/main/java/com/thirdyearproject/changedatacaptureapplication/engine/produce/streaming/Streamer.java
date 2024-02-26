@@ -3,6 +3,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine.produce.streami
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineException;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
+import java.io.IOException;
 import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,5 +29,5 @@ public abstract class Streamer {
 
   protected abstract void initEnvironment() throws SQLException;
 
-  protected abstract void streamChanges() throws SQLException;
+  protected abstract void streamChanges() throws SQLException, IOException;
 }

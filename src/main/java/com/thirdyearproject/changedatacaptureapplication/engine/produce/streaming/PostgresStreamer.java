@@ -5,6 +5,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.PostgresReplicationConnection;
+import java.io.IOException;
 import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.core.BaseConnection;
@@ -46,14 +47,19 @@ public class PostgresStreamer extends Streamer {
   }
 
   @Override
-  protected void streamChanges() throws SQLException {
-    while (!replicationStream.isClosed()) {
-      var message = replicationStream.readPending();
-      if (message == null) {
-        continue;
+  protected void streamChanges() throws SQLException, IOException {
+    try {
+      while (!replicationStream.isClosed()) {
+        var message = replicationStream.readPending();
+        if (message == null) {
+          continue;
+        }
+        var lsn = replicationStream.getLastReceiveLSN();
+        pgOutputMessageDecoder.processNotEmptyMessage(message, lsn);
       }
-      var lsn = replicationStream.getLastReceiveLSN();
-      pgOutputMessageDecoder.processNotEmptyMessage(message, lsn);
+    } finally {
+      replicationStream.close();
+      replicationConnection.close();
     }
   }
 }
