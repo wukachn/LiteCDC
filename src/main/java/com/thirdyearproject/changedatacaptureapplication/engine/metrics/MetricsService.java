@@ -7,8 +7,6 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Cha
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -93,7 +91,7 @@ public class MetricsService {
       return 0;
     }
     if (snapshotEndTime == null) {
-      return ChronoUnit.SECONDS.between(snapshotStartTime, OffsetDateTime.now(ZoneOffset.UTC));
+      return ChronoUnit.SECONDS.between(snapshotStartTime, Instant.now());
     }
 
     return ChronoUnit.SECONDS.between(snapshotStartTime, snapshotEndTime);

@@ -3,8 +3,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine.change;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.kafka.KafkaProducerService;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -22,9 +21,7 @@ public class ChangeEventProducer {
     metricsService.produceEvent(changeEvent);
 
     var tableId = changeEvent.getMetadata().getTableId();
-    changeEvent
-        .getMetadata()
-        .setProducedTime(OffsetDateTime.now(ZoneOffset.UTC).toInstant().toEpochMilli());
+    changeEvent.getMetadata().setProducedTime(Instant.now().toEpochMilli());
     kafkaProducerService.sendEvent(changeEvent, tableId);
   }
 }
