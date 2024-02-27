@@ -9,6 +9,6 @@ import lombok.Value;
 @Builder
 public class GetMetricsResponse {
   long pipelineStartTime;
-  List<TableCRUD> tables;
   long producerConsumerTimeLagMs;
+  List<TableCRUD> tables;
 }

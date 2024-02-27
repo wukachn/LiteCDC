@@ -12,7 +12,7 @@ public class PostgresMetadata extends Metadata {
 
   @Getter @NonNull private LogSequenceNumber lsn;
   @Setter @Nullable private LogSequenceNumber commitLsn;
-  private long txId;
+  private Long txId;
 
   @Override
   public String getOffset() {

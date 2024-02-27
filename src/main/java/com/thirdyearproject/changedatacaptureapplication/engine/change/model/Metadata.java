@@ -8,6 +8,7 @@ import lombok.experimental.SuperBuilder;
 public abstract class Metadata {
   @Getter private TableIdentifier tableId;
   @Getter private CRUD op;
+  @Getter private Long dbCommitTime;
   @Setter @Getter private long producedTime;
 
   public abstract String getOffset();
