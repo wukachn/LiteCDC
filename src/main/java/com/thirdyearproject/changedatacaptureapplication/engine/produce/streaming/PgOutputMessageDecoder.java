@@ -34,7 +34,7 @@ public class PgOutputMessageDecoder {
   private final PostgresTransactionProcessor transactionProcessor;
   private JdbcConnection jdbcConnection;
   private Long currentTxId;
-  private Instant transactionCommitTime;
+  private Long transactionCommitTime;
 
   public PgOutputMessageDecoder(
       JdbcConnection jdbcConnection, ChangeEventProducer changeEventProducer) {
@@ -64,7 +64,7 @@ public class PgOutputMessageDecoder {
 
   private void handleBeginMessage(ByteBuffer buffer) throws SQLException {
     var lsn = buffer.getLong();
-    this.transactionCommitTime = PG_EPOCH.plus(buffer.getLong(), ChronoUnit.MICROS);
+    this.transactionCommitTime = PG_EPOCH.plus(buffer.getLong(), ChronoUnit.MICROS).toEpochMilli();
     this.currentTxId = Integer.toUnsignedLong(buffer.getInt());
   }
 
@@ -142,6 +142,7 @@ public class PgOutputMessageDecoder {
             .op(CRUD.CREATE)
             .lsn(lsn)
             .txId(currentTxId)
+            .dbCommitTime(transactionCommitTime)
             .build();
 
     var after = buildColumnData(relationId, buffer);
@@ -162,6 +163,7 @@ public class PgOutputMessageDecoder {
             .op(CRUD.UPDATE)
             .lsn(lsn)
             .txId(currentTxId)
+            .dbCommitTime(transactionCommitTime)
             .build();
 
     List<ColumnWithData> before;
@@ -194,6 +196,7 @@ public class PgOutputMessageDecoder {
             .op(CRUD.DELETE)
             .lsn(lsn)
             .txId(currentTxId)
+            .dbCommitTime(transactionCommitTime)
             .build();
 
     var before = buildColumnData(relationId, buffer);

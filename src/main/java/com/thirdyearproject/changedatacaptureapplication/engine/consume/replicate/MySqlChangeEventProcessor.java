@@ -26,10 +26,6 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
 
   @Override
   public void process(List<ChangeEvent> changeEvents) {
-    if (changeEvents.isEmpty()) {
-      return;
-    }
-
     Collections.sort(changeEvents);
 
     createDatabasesIfNotExists(changeEvents);

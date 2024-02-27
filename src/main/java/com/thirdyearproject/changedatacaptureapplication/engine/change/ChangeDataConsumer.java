@@ -4,6 +4,9 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Cha
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventProcessor;
 import com.thirdyearproject.changedatacaptureapplication.engine.kafka.serialization.ChangeEventDeserializer;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -23,16 +26,19 @@ public class ChangeDataConsumer implements Runnable {
   private String topicPrefix;
   private List<TableIdentifier> tables;
   private ChangeEventProcessor eventProcessor;
+  private MetricsService metricsService;
 
   public ChangeDataConsumer(
       String bootstrapServer,
       String topicPrefix,
       List<TableIdentifier> tables,
-      ChangeEventProcessor eventProcessor) {
+      ChangeEventProcessor eventProcessor,
+      MetricsService metricsService) {
     this.consumer = createConsumer(bootstrapServer, tables);
     this.topicPrefix = topicPrefix;
     this.tables = tables;
     this.eventProcessor = eventProcessor;
+    this.metricsService = metricsService;
   }
 
   private KafkaConsumer<String, ChangeEvent> createConsumer(
@@ -55,13 +61,17 @@ public class ChangeDataConsumer implements Runnable {
     consumer.subscribe(topics);
     try {
       while (true) {
-        ConsumerRecords<String, ChangeEvent> consumerRecords = consumer.poll(1000);
+        ConsumerRecords<String, ChangeEvent> consumerRecords =
+            consumer.poll(Duration.of(1000, ChronoUnit.MILLIS));
         List<ChangeEvent> changeEvents =
             StreamSupport.stream(consumerRecords.spliterator(), false)
                 .map(ConsumerRecord::value)
                 .collect(Collectors.toList());
-        eventProcessor.process(changeEvents);
-        consumer.commitSync(); // TODO: do i need this?
+        if (!changeEvents.isEmpty()) {
+          metricsService.consumeEvent(changeEvents.get(changeEvents.size() - 1));
+          eventProcessor.process(changeEvents);
+          consumer.commitAsync(); // TODO: do i need this?
+        }
       }
     } catch (Exception e) {
       log.error("Consumer Error.", e);

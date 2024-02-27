@@ -3,6 +3,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine.kafka;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeDataConsumer;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventProcessor;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.Set;
@@ -22,7 +23,8 @@ public class KafkaConsumerManager {
       String bootstrapServer,
       String topicPrefix,
       Set<TableIdentifier> tables,
-      ChangeEventProcessor eventProcessor) {
+      ChangeEventProcessor eventProcessor,
+      MetricsService metricsService) {
     createTopicsIfNotExists(bootstrapServer, topicPrefix, tables);
     var groupedBySchema =
         tables.stream().collect(Collectors.groupingBy(TableIdentifier::getSchema)).values().stream()
@@ -30,7 +32,8 @@ public class KafkaConsumerManager {
     for (var schemaTables : groupedBySchema) {
       // Consumer per Schema.
       executor.submit(
-          new ChangeDataConsumer(bootstrapServer, topicPrefix, schemaTables, eventProcessor));
+          new ChangeDataConsumer(
+              bootstrapServer, topicPrefix, schemaTables, eventProcessor, metricsService));
     }
   }
 

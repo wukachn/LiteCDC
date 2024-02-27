@@ -27,6 +27,7 @@ public class Pipeline implements Closeable, Runnable {
   @Override
   public void run() {
     try {
+      metricsService.startingPipeline();
       metricsService.setPipelineStatus(PipelineStatus.STARTING);
       var tables = pipelineConfiguration.getSourceConfig().getTables();
       if (pipelineConfiguration.getDestinationConfig() != null) {
@@ -34,7 +35,8 @@ public class Pipeline implements Closeable, Runnable {
         var topicPrefix = pipelineConfiguration.getKafkaConfig().getTopicPrefix();
         var eventProcessor =
             pipelineConfiguration.getDestinationConfig().createChangeEventProcessor();
-        KafkaConsumerManager.createConsumers(bootstrapServer, topicPrefix, tables, eventProcessor);
+        KafkaConsumerManager.createConsumers(
+            bootstrapServer, topicPrefix, tables, eventProcessor, metricsService);
       }
 
       metricsService.setPipelineStatus(PipelineStatus.SNAPSHOTTING);

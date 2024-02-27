@@ -139,7 +139,7 @@ public class PostgresSnapshotter extends Snapshotter {
   }
 
   @Override
-  protected void snapshotComplete() throws SQLException, IOException {
+  protected void snapshotComplete() throws IOException {
     replicationSlotConnection.close();
     jdbcConnection.close();
   }

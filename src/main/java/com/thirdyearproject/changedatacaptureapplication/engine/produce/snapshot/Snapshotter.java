@@ -1,10 +1,10 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
-import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineException;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineException;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -32,7 +32,7 @@ public abstract class Snapshotter {
     this.metricsService = metricsService;
   }
 
-  public void snapshot(Set<TableIdentifier> tables) throws PipelineException {
+  public void snapshot(Set<TableIdentifier> tables) throws PipelineException, IOException {
     log.info(
         String.format(
             "Starting snapshot on the following tables: %s",
@@ -48,11 +48,11 @@ public abstract class Snapshotter {
 
       log.info("Step 3: Snapshotting content of tables");
       snapshotTables(tables);
-
-      log.info("Snapshot Complete.");
-      snapshotComplete();
     } catch (Exception e) {
       throw new PipelineException("Pipeline failed during snapshotting phase.", e);
+    } finally {
+      log.info("Snapshot Complete.");
+      snapshotComplete();
     }
     metricsService.completingSnapshot();
   }
@@ -64,5 +64,5 @@ public abstract class Snapshotter {
 
   protected abstract void snapshotTables(Set<TableIdentifier> tables) throws SQLException;
 
-  protected abstract void snapshotComplete() throws SQLException, IOException;
+  protected abstract void snapshotComplete() throws IOException;
 }

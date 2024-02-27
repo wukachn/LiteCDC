@@ -1,11 +1,12 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.metrics;
 
+import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetMetricsResponse;
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetPipelineStatusResponse;
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetSnapshotMetricsResponse;
-import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,9 +20,13 @@ import org.springframework.stereotype.Service;
 public class MetricsService {
 
   @Setter PipelineStatus pipelineStatus = PipelineStatus.NOT_RUNNING;
-  OffsetDateTime snapshotStartTime;
-  OffsetDateTime snapshotEndTime;
-  Map<TableIdentifier, Pair<Long, Boolean>> tableTracker = new HashMap<>();
+  Instant snapshotStartTime;
+  Instant snapshotEndTime;
+  Map<TableIdentifier, Pair<Long, Boolean>> snapshotTracker = new HashMap<>();
+  Map<TableIdentifier, CrudCount> crudTracker = new HashMap<>();
+  Instant pipelineStartTime;
+  Long dbProducerTimeLagMs;
+  Long producerConsumerTimeLagMs;
 
   public GetPipelineStatusResponse getPipelineStatus() {
     return GetPipelineStatusResponse.builder().status(pipelineStatus).build();
@@ -38,23 +43,43 @@ public class MetricsService {
         .build();
   }
 
+  public GetMetricsResponse getMetrics() {
+    if (pipelineStatus == PipelineStatus.NOT_RUNNING) {
+      throw new PipelineNotRunningException("Pipeline not running.");
+    }
+    return GetMetricsResponse.builder()
+        .pipelineStartTime(pipelineStartTime.toEpochMilli())
+        .dbProducerTimeLagMs(dbProducerTimeLagMs)
+        .producerConsumerTimeLagMs(producerConsumerTimeLagMs)
+        .tables(getTableCrudCounts())
+        .build();
+  }
+
   public void updateSnapshotRows(TableIdentifier tableId, long rows, boolean completed) {
-    tableTracker.put(tableId, Pair.with(rows, completed));
+    snapshotTracker.put(tableId, Pair.with(rows, completed));
+  }
+
+  public void startingPipeline() {
+    this.pipelineStartTime = Instant.now();
   }
 
   public void startingSnapshot() {
-    this.snapshotStartTime = OffsetDateTime.now(ZoneOffset.UTC);
+    this.snapshotStartTime = Instant.now();
   }
 
   public void completingSnapshot() {
-    this.snapshotEndTime = OffsetDateTime.now(ZoneOffset.UTC);
+    this.snapshotEndTime = Instant.now();
   }
 
   public void clear() {
     this.pipelineStatus = PipelineStatus.NOT_RUNNING;
     this.snapshotStartTime = null;
     this.snapshotEndTime = null;
-    this.tableTracker = new HashMap<>();
+    this.snapshotTracker = new HashMap<>();
+    this.pipelineStartTime = null;
+    this.crudTracker = new HashMap<>();
+    this.dbProducerTimeLagMs = null;
+    this.producerConsumerTimeLagMs = null;
   }
 
   private boolean isSnapshotComplete() {
@@ -69,7 +94,7 @@ public class MetricsService {
       return 0;
     }
     if (snapshotEndTime == null) {
-      return ChronoUnit.SECONDS.between(snapshotStartTime, OffsetDateTime.now(ZoneOffset.UTC));
+      return ChronoUnit.SECONDS.between(snapshotStartTime, Instant.now());
     }
 
     return ChronoUnit.SECONDS.between(snapshotStartTime, snapshotEndTime);
@@ -77,7 +102,7 @@ public class MetricsService {
 
   private List<TableRowsSnapshot> getRowsSnapshot() {
     List<TableRowsSnapshot> rowsSnapshot = new ArrayList<>();
-    for (var entry : tableTracker.entrySet()) {
+    for (var entry : snapshotTracker.entrySet()) {
       var valuePair = entry.getValue();
       rowsSnapshot.add(
           TableRowsSnapshot.builder()
@@ -87,5 +112,36 @@ public class MetricsService {
               .build());
     }
     return rowsSnapshot;
+  }
+
+  private List<TableCRUD> getTableCrudCounts() {
+    List<TableCRUD> crudCounts = new ArrayList<>();
+    for (var entry : crudTracker.entrySet()) {
+      crudCounts.add(
+          TableCRUD.builder().table(entry.getKey()).operationCounts(entry.getValue()).build());
+    }
+    return crudCounts;
+  }
+
+  public void produceEvent(ChangeEvent changeEvent) {
+    var metadata = changeEvent.getMetadata();
+
+    var tableIdentifier = metadata.getTableId();
+    var crudCount = crudTracker.get(tableIdentifier);
+    if (crudCount == null) {
+      crudCount = CrudCount.builder().build();
+    }
+    crudCount.incrementOperation(metadata.getOp());
+    crudTracker.put(tableIdentifier, crudCount);
+
+    var commitTime = metadata.getDbCommitTime();
+    if (commitTime != null) {
+      this.dbProducerTimeLagMs = metadata.getProducedTime() - metadata.getDbCommitTime();
+    }
+  }
+
+  public void consumeEvent(ChangeEvent changeEvent) {
+    var producedTime = changeEvent.getMetadata().getProducedTime();
+    this.producerConsumerTimeLagMs = Instant.now().toEpochMilli() - producedTime;
   }
 }

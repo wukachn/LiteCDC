@@ -1,6 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.api;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetMetricsResponse;
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetPipelineStatusResponse;
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetSnapshotMetricsResponse;
 import com.thirdyearproject.changedatacaptureapplication.engine.PipelineInitializer;
@@ -46,5 +47,10 @@ public class PipelineController {
   @GetMapping("/metrics/snapshot")
   public GetSnapshotMetricsResponse getSnapshotMetrics() {
     return metricsService.getSnapshotMetrics();
+  }
+
+  @GetMapping("/metrics")
+  public GetMetricsResponse getMetrics() {
+    return metricsService.getMetrics();
   }
 }
