@@ -1,6 +1,5 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.change.model;
 
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
@@ -10,7 +9,7 @@ import org.springframework.lang.Nullable;
 @SuperBuilder
 public class PostgresMetadata extends Metadata {
 
-  @Getter @NonNull private LogSequenceNumber lsn;
+  @NonNull private LogSequenceNumber lsn;
   @Setter @Nullable private LogSequenceNumber commitLsn;
   private Long txId;
 
