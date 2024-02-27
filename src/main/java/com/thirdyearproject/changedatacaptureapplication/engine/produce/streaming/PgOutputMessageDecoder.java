@@ -19,6 +19,7 @@ import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.replication.LogSequenceNumber;
@@ -63,7 +64,7 @@ public class PgOutputMessageDecoder {
 
   private void handleBeginMessage(ByteBuffer buffer) throws SQLException {
     var lsn = buffer.getLong();
-    this.transactionCommitTime = buffer.getLong();
+    this.transactionCommitTime = PG_EPOCH.plus(buffer.getLong(), ChronoUnit.MICROS).toEpochMilli();
     this.currentTxId = Integer.toUnsignedLong(buffer.getInt());
   }
 

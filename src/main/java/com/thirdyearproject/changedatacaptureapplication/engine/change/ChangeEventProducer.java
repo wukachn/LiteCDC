@@ -18,10 +18,8 @@ public class ChangeEventProducer {
   }
 
   public void sendEvent(ChangeEvent changeEvent) {
-    metricsService.produceEvent(changeEvent);
-
-    var tableId = changeEvent.getMetadata().getTableId();
     changeEvent.getMetadata().setProducedTime(Instant.now().toEpochMilli());
-    kafkaProducerService.sendEvent(changeEvent, tableId);
+    metricsService.produceEvent(changeEvent);
+    kafkaProducerService.sendEvent(changeEvent, changeEvent.getMetadata().getTableId());
   }
 }

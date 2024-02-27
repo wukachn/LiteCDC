@@ -25,7 +25,8 @@ public class MetricsService {
   Map<TableIdentifier, Pair<Long, Boolean>> snapshotTracker = new HashMap<>();
   Map<TableIdentifier, CrudCount> crudTracker = new HashMap<>();
   Instant pipelineStartTime;
-  long producerConsumerTimeLagMs = -1;
+  Long dbProducerTimeLagMs;
+  Long producerConsumerTimeLagMs;
 
   public GetPipelineStatusResponse getPipelineStatus() {
     return GetPipelineStatusResponse.builder().status(pipelineStatus).build();
@@ -48,8 +49,9 @@ public class MetricsService {
     }
     return GetMetricsResponse.builder()
         .pipelineStartTime(pipelineStartTime.toEpochMilli())
-        .tables(getTableCrudCounts())
+        .dbProducerTimeLagMs(dbProducerTimeLagMs)
         .producerConsumerTimeLagMs(producerConsumerTimeLagMs)
+        .tables(getTableCrudCounts())
         .build();
   }
 
@@ -76,7 +78,8 @@ public class MetricsService {
     this.snapshotTracker = new HashMap<>();
     this.pipelineStartTime = null;
     this.crudTracker = new HashMap<>();
-    this.producerConsumerTimeLagMs = -1;
+    this.dbProducerTimeLagMs = null;
+    this.producerConsumerTimeLagMs = null;
   }
 
   private boolean isSnapshotComplete() {
@@ -121,14 +124,20 @@ public class MetricsService {
   }
 
   public void produceEvent(ChangeEvent changeEvent) {
-    var tableIdentifier = changeEvent.getMetadata().getTableId();
-    var op = changeEvent.getMetadata().getOp();
+    var metadata = changeEvent.getMetadata();
+
+    var tableIdentifier = metadata.getTableId();
     var crudCount = crudTracker.get(tableIdentifier);
     if (crudCount == null) {
       crudCount = CrudCount.builder().build();
     }
-    crudCount.incrementOperation(op);
+    crudCount.incrementOperation(metadata.getOp());
     crudTracker.put(tableIdentifier, crudCount);
+
+    var commitTime = metadata.getDbCommitTime();
+    if (commitTime != null) {
+      this.dbProducerTimeLagMs = metadata.getProducedTime() - metadata.getDbCommitTime();
+    }
   }
 
   public void consumeEvent(ChangeEvent changeEvent) {
