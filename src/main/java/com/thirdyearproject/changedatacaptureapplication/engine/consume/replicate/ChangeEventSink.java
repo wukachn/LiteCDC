@@ -3,6 +3,6 @@ package com.thirdyearproject.changedatacaptureapplication.engine.consume.replica
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import java.util.List;
 
-public interface ChangeEventProcessor {
+public interface ChangeEventSink {
   void process(List<ChangeEvent> changeEvents);
 }

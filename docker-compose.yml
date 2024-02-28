@@ -64,6 +64,7 @@ services:
     image: mysql:latest
     ports:
       - "3306:3306"
+    command: --max_allowed_packet=130023424
     environment:
         MYSQL_ROOT_PASSWORD: root
         MYSQL_DATABASE: mysql_db

@@ -2,7 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine.kafka;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeDataConsumer;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
-import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventProcessor;
+import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventSink;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import java.util.Collections;
 import java.util.Properties;
@@ -23,7 +23,7 @@ public class KafkaConsumerManager {
       String bootstrapServer,
       String topicPrefix,
       Set<TableIdentifier> tables,
-      ChangeEventProcessor eventProcessor,
+      ChangeEventSink eventProcessor,
       MetricsService metricsService) {
     createTopicsIfNotExists(bootstrapServer, topicPrefix, tables);
     var groupedBySchema =
