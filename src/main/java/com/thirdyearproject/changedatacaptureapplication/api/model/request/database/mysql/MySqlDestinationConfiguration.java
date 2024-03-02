@@ -16,13 +16,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MySqlDestinationConfiguration implements DestinationConfiguration {
   @NonNull MySqlConnectionConfiguration connectionConfig;
-  @NonNull MySQLSinkType sinkType = MySQLSinkType.REGULAR;
+  @NonNull MySQLSinkType sinkType;
 
   @Override
   public ChangeEventSink createChangeEventSink() {
     if (sinkType == MySQLSinkType.REGULAR) {
       return new MySqlRegularSink(connectionConfig);
-    }else {
+    } else {
       return new MySqlBatchingSink(connectionConfig);
     }
   }

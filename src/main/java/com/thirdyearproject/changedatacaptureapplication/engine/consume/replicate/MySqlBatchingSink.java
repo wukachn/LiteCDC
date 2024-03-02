@@ -20,6 +20,7 @@ public class MySqlBatchingSink extends MySqlSink {
 
   public MySqlBatchingSink(MySqlConnectionConfiguration connectionConfig) {
     super(connectionConfig);
+    log.info("Consuming change events in BATCHING mode.");
   }
 
   @Override
