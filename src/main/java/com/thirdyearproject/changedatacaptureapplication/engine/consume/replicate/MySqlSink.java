@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class MySqlSink implements ChangeEventSink {
-  protected static String DELETE_ROW = "DELETE FROM %s WHERE %;";
+  protected static String DELETE_ROW = "DELETE FROM %s WHERE %s;";
   protected static String UPSERT_ROW =
       "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;";
   private static String ADD_COLUMN = "ALTER TABLE %s ADD COLUMN %s %s;";
@@ -55,6 +55,9 @@ public abstract class MySqlSink implements ChangeEventSink {
 
   private void createTablesIfNotExists(List<ChangeEvent> changeEvents) {
     var createTablesSql = createTableStatements(changeEvents);
+    if (createTablesSql.isEmpty()) {
+      return;
+    }
     try (var stmt = jdbcConnection.getConnection().createStatement()) {
       stmt.execute(createTablesSql);
     } catch (SQLException e) {
@@ -217,7 +220,7 @@ public abstract class MySqlSink implements ChangeEventSink {
   }
 
   protected String buildDeleteSql(ChangeEvent changeEvent) {
-    var tableId = changeEvent.getMetadata().getTableId().getStringFormat();
+    var tableId = "cdc_" + changeEvent.getMetadata().getTableId().getStringFormat();
 
     var columnDetails = changeEvent.getBefore();
     var conditionBuilder = new StringBuilder();
@@ -230,7 +233,7 @@ public abstract class MySqlSink implements ChangeEventSink {
       }
     }
     conditionBuilder.append(
-        String.format("cdc_last_updated < %s", changeEvent.getMetadata().getOffset()));
+        String.format("cdc_last_updated < %s", quoteIfString(changeEvent.getMetadata().getOffset())));
 
     return String.format(DELETE_ROW, tableId, conditionBuilder);
   }
