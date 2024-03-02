@@ -2,7 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine.change;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
-import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventProcessor;
+import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventSink;
 import com.thirdyearproject.changedatacaptureapplication.engine.kafka.serialization.ChangeEventDeserializer;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import java.time.Duration;
@@ -25,14 +25,14 @@ public class ChangeDataConsumer implements Runnable {
   private KafkaConsumer<String, ChangeEvent> consumer;
   private String topicPrefix;
   private List<TableIdentifier> tables;
-  private ChangeEventProcessor eventProcessor;
+  private ChangeEventSink eventProcessor;
   private MetricsService metricsService;
 
   public ChangeDataConsumer(
       String bootstrapServer,
       String topicPrefix,
       List<TableIdentifier> tables,
-      ChangeEventProcessor eventProcessor,
+      ChangeEventSink eventProcessor,
       MetricsService metricsService) {
     this.consumer = createConsumer(bootstrapServer, tables);
     this.topicPrefix = topicPrefix;
@@ -52,6 +52,9 @@ public class ChangeDataConsumer implements Runnable {
     properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
     properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ChangeEventDeserializer.class);
     properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    properties.put(ConsumerConfig.FETCH_MAX_BYTES_CONFIG, 419430400);
+    properties.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10000);
+    properties.put(ConsumerConfig.MAX_PARTITION_FETCH_BYTES_CONFIG, 419430400);
     return new KafkaConsumer<>(properties);
   }
 
@@ -62,15 +65,15 @@ public class ChangeDataConsumer implements Runnable {
     try {
       while (true) {
         ConsumerRecords<String, ChangeEvent> consumerRecords =
-            consumer.poll(Duration.of(1000, ChronoUnit.MILLIS));
+            consumer.poll(Duration.of(2000, ChronoUnit.MILLIS));
         List<ChangeEvent> changeEvents =
-            StreamSupport.stream(consumerRecords.spliterator(), false)
+            StreamSupport.stream(consumerRecords.spliterator(), true)
                 .map(ConsumerRecord::value)
                 .collect(Collectors.toList());
         if (!changeEvents.isEmpty()) {
           metricsService.consumeEvent(changeEvents.get(changeEvents.size() - 1));
           eventProcessor.process(changeEvents);
-          consumer.commitAsync(); // TODO: do i need this?
+          // consumer.commitAsync(); // TODO: do i need this?
         }
       }
     } catch (Exception e) {

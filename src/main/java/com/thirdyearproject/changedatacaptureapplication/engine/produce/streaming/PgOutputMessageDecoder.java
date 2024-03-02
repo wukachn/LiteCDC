@@ -201,7 +201,7 @@ public class PgOutputMessageDecoder {
 
     var before = buildColumnData(relationId, buffer);
 
-    var changeEvent = ChangeEvent.builder().metadata(metadata).before(null).after(null).build();
+    var changeEvent = ChangeEvent.builder().metadata(metadata).before(before).after(null).build();
 
     return changeEvent;
   }

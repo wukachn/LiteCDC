@@ -51,6 +51,10 @@ public class JdbcConnection implements Closeable {
     this.getConnection().setAutoCommit(autoCommit);
   }
 
+  public void commit() throws SQLException {
+    this.getConnection().commit();
+  }
+
   public List<ColumnDetails> getTableColumns(TableIdentifier tableId) throws SQLException {
     var columnList = new ArrayList<ColumnDetails>();
 

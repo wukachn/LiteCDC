@@ -2,6 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine.consume.replica
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySqlConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.CRUD;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
@@ -9,17 +10,23 @@ import com.thirdyearproject.changedatacaptureapplication.util.MySqlTypeUtils;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class MySqlChangeEventProcessor implements ChangeEventProcessor {
+public abstract class MySqlSink implements ChangeEventSink {
+  protected static String DELETE_ROW = "DELETE FROM %s WHERE %s;";
+  protected static String UPSERT_ROW =
+      "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;";
   private static String ADD_COLUMN = "ALTER TABLE %s ADD COLUMN %s %s;";
   private static String DROP_COLUMN = "ALTER TABLE %s DROP COLUMN %s;";
   private static String ALTER_COLUMN = "ALTER TABLE %s MODIFY %s %s %s;";
-  private JdbcConnection jdbcConnection;
-  private Map<TableIdentifier, List<ColumnDetails>> columnDetailsMap;
+  private static String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS %s (%s);";
+  private static String CREATE_DB = "CREATE DATABASE IF NOT EXISTS %s;";
+  protected JdbcConnection jdbcConnection;
+  protected Map<TableIdentifier, List<ColumnDetails>> columnDetailsMap;
 
-  public MySqlChangeEventProcessor(MySqlConnectionConfiguration connectionConfig) {
+  public MySqlSink(MySqlConnectionConfiguration connectionConfig) {
     this.jdbcConnection = new JdbcConnection(connectionConfig);
     this.columnDetailsMap = new HashMap<>();
   }
@@ -35,6 +42,8 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
     deliverChanges(changeEvents);
   }
 
+  protected abstract void deliverChanges(List<ChangeEvent> changeEvents);
+
   private void createDatabasesIfNotExists(List<ChangeEvent> changeEvents) {
     var createDatabasesSql = createDatabaseStatements(changeEvents);
     try (var stmt = jdbcConnection.getConnection().createStatement()) {
@@ -46,19 +55,13 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
 
   private void createTablesIfNotExists(List<ChangeEvent> changeEvents) {
     var createTablesSql = createTableStatements(changeEvents);
+    if (createTablesSql.isEmpty()) {
+      return;
+    }
     try (var stmt = jdbcConnection.getConnection().createStatement()) {
       stmt.execute(createTablesSql);
     } catch (SQLException e) {
       log.error("Could not ensure destination tables were created.", e);
-    }
-  }
-
-  private void deliverChanges(List<ChangeEvent> changeEvents) {
-    var updateSql = buildUpdates(changeEvents);
-    try (var stmt = jdbcConnection.getConnection().createStatement()) {
-      stmt.execute(updateSql);
-    } catch (SQLException e) {
-      log.error("Could not deliver changes to destination database.", e);
     }
   }
 
@@ -69,14 +72,16 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
             .collect(Collectors.toUnmodifiableSet());
     var sqlBuilder = new StringBuilder();
     for (var database : databases) {
-      sqlBuilder.append(String.format("CREATE DATABASE IF NOT EXISTS %s;", database));
+      sqlBuilder.append(String.format(CREATE_DB, database));
     }
     return sqlBuilder.toString();
   }
 
   private String createTableStatements(List<ChangeEvent> changeEvents) {
+    // Find first unique non-delete event.
     var uniqueTableChangeEvents =
         changeEvents.stream()
+            .filter(changeEvent -> changeEvent.getMetadata().getOp() != CRUD.DELETE)
             .collect(
                 Collectors.groupingBy(
                     event -> event.getMetadata().getTableId().getStringFormat(),
@@ -109,7 +114,7 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
     var columnCSV =
         String.format("%s,%s", String.join(",", columnValues), "cdc_last_updated varchar(60)");
 
-    return String.format("CREATE TABLE IF NOT EXISTS %s (%s);", table, columnCSV);
+    return String.format(CREATE_TABLE, table, columnCSV);
   }
 
   private String buildCreateTableColumnString(ColumnDetails details) {
@@ -119,29 +124,12 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
     return String.format("%s %s %s", columnName, columnType, primaryKey);
   }
 
-  private String buildUpdates(List<ChangeEvent> changeEvents) {
-    var sqlBuilder = new StringBuilder();
-    for (var changeEvent : changeEvents) {
-      var tableId = changeEvent.getMetadata().getTableId();
-      var afterDetails = changeEvent.getAfterColumnDetails();
-      if (columnDetailsMap.containsKey(tableId)) {
-        var beforeDetails = columnDetailsMap.get(tableId);
-        var possibleAlterTableSql =
-            compareAndBuildAlterTableSql(tableId, beforeDetails, afterDetails);
-        sqlBuilder.append(possibleAlterTableSql);
-      } else {
-        columnDetailsMap.put(tableId, afterDetails);
-      }
-      sqlBuilder.append(buildSingleIdempotentUpdate(changeEvent));
-    }
-    return sqlBuilder.toString();
-  }
-
   // No support for column renaming.
-  private String compareAndBuildAlterTableSql(
+  protected void compareStructureAndAlterTable(
       TableIdentifier tableIdentifier,
       List<ColumnDetails> beforeDetails,
-      List<ColumnDetails> afterDetails) {
+      List<ColumnDetails> afterDetails)
+      throws SQLException {
     var sqlBuilder = new StringBuilder();
 
     // Check for deleted columns.
@@ -187,23 +175,25 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
       }
     }
 
-    return sqlBuilder.toString();
+    var sqlString = sqlBuilder.toString();
+    if (!sqlString.isEmpty()) {
+      try (var tableStmt = jdbcConnection.getConnection().createStatement()) {
+        tableStmt.execute(sqlBuilder.toString());
+      }
+    }
   }
 
-  private String buildSingleIdempotentUpdate(ChangeEvent changeEvent) {
-    // Add a simple prefix TODO: Make this configurable.
+  protected String buildUpsertSqlString(ChangeEvent changeEvent) {
     var table = String.format("cdc_%s", changeEvent.getMetadata().getTableId().getStringFormat());
 
     var columnNames =
         changeEvent.getAfter().stream().map(column -> column.getDetails().getName()).toList();
     var namesCSV = String.format("%s,%s", String.join(",", columnNames), "cdc_last_updated");
 
-    var columnValues =
-        changeEvent.getAfter().stream().map(column -> quoteIfString(column.getValue())).toList();
     var valuesCSV =
-        String.format(
-            "%s,%s",
-            String.join(",", columnValues), quoteIfString(changeEvent.getMetadata().getOffset()));
+        IntStream.range(0, changeEvent.getAfter().size() + 1)
+            .mapToObj(i -> "?")
+            .collect(Collectors.joining(","));
 
     var updateDetails =
         changeEvent.getAfter().stream()
@@ -220,12 +210,35 @@ public class MySqlChangeEventProcessor implements ChangeEventProcessor {
             "%s,%s",
             String.join(",", updateDetails), "cdc_last_updated = VALUES(cdc_last_updated)");
 
-    return String.format(
-        "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;",
-        table, namesCSV, valuesCSV, updateDetailsCSV);
+    return String.format(UPSERT_ROW, table, namesCSV, valuesCSV, updateDetailsCSV);
   }
 
-  private String quoteIfString(Object value) {
+  protected void handleDelete(ChangeEvent changeEvent) throws SQLException {
+    try (var stmt = jdbcConnection.getConnection().createStatement()) {
+      stmt.execute(buildDeleteSql(changeEvent));
+    }
+  }
+
+  protected String buildDeleteSql(ChangeEvent changeEvent) {
+    var tableId = "cdc_" + changeEvent.getMetadata().getTableId().getStringFormat();
+
+    var columnDetails = changeEvent.getBefore();
+    var conditionBuilder = new StringBuilder();
+    for (var column : columnDetails) {
+      var details = column.getDetails();
+      if (details.isPrimaryKey()) {
+        conditionBuilder.append(
+            String.format("%s = %s", details.getName(), quoteIfString(column.getValue())));
+        conditionBuilder.append(" AND ");
+      }
+    }
+    conditionBuilder.append(
+        String.format("cdc_last_updated < %s", quoteIfString(changeEvent.getMetadata().getOffset())));
+
+    return String.format(DELETE_ROW, tableId, conditionBuilder);
+  }
+
+  protected String quoteIfString(Object value) {
     if (value.getClass().getName().equals("java.lang.String")) {
       return "\"" + value + "\"";
     }
