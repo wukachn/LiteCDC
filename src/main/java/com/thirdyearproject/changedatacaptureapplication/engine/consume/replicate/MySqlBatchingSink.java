@@ -3,6 +3,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine.consume.replica
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySqlConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.CRUD;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -43,13 +44,13 @@ public class MySqlBatchingSink extends MySqlSink {
             var afterDetails = firstEvent.getAfterColumnDetails();
             if (columnDetailsMap.containsKey(tableId)) {
               var beforeDetails = columnDetailsMap.get(tableId);
-              compareStructureAndAlterTable(tableId, beforeDetails, afterDetails);
+              handlePossibleSchemaChange(tableId, beforeDetails, afterDetails);
             } else {
               columnDetailsMap.put(tableId, afterDetails);
             }
 
             try (var stmt =
-                jdbcConnection.getConnection().prepareStatement(buildUpsertSqlString(firstEvent))) {
+                jdbcConnection.getConnection().prepareStatement(buildUpsertSqlString(firstEvent, true))) {
               for (var currentEvent : currentBatch) {
                 setPreparedStatementValues(currentEvent, stmt);
                 stmt.addBatch();
@@ -107,6 +108,12 @@ public class MySqlBatchingSink extends MySqlSink {
     return batchList;
   }
 
+  private void handleDelete(ChangeEvent changeEvent) throws SQLException {
+    try (var stmt = jdbcConnection.getConnection().createStatement()) {
+      stmt.execute(buildDeleteSql(changeEvent));
+    }
+  }
+
   private void setPreparedStatementValues(ChangeEvent changeEvent, PreparedStatement stmt)
       throws SQLException {
     var columns = changeEvent.getAfter();
@@ -124,6 +131,18 @@ public class MySqlBatchingSink extends MySqlSink {
         }
       }
       stmt.setString(columns.size() + 1, changeEvent.getMetadata().getOffset());
+    }
+  }
+
+  private void handlePossibleSchemaChange(
+          TableIdentifier tableId, List<ColumnDetails> beforeDetails, List<ColumnDetails> afterDetails)
+          throws SQLException {
+    var possibleSchemaChangeSql =
+            compareStructureAndBuildSchemaChange(tableId, beforeDetails, afterDetails);
+    if (!possibleSchemaChangeSql.isEmpty()) {
+      try (var stmt = jdbcConnection.getConnection().createStatement()) {
+        stmt.execute(possibleSchemaChangeSql);
+      }
     }
   }
 }
