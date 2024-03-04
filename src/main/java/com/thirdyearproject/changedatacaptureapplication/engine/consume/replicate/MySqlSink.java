@@ -16,8 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class MySqlSink implements ChangeEventSink {
   protected static String DELETE_ROW = "DELETE FROM %s WHERE %s";
-  protected static String UPSERT_ROW =
-      "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s";
+  protected static String UPSERT_ROW = "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s";
   private static String ADD_COLUMN = "ALTER TABLE %s ADD COLUMN %s %s;";
   private static String DROP_COLUMN = "ALTER TABLE %s DROP COLUMN %s;";
   private static String ALTER_COLUMN = "ALTER TABLE %s MODIFY %s %s %s;";

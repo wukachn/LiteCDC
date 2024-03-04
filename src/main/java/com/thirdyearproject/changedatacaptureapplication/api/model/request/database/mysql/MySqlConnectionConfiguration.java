@@ -32,7 +32,7 @@ public class MySqlConnectionConfiguration implements ConnectionConfiguration {
     properties.setProperty("allowMultiQueries", "true");
 
     // TODO: Use for batching but not for regular.
-    //properties.setProperty("rewriteBatchedStatements", "true");
+    // properties.setProperty("rewriteBatchedStatements", "true");
 
     // Needed for current local set up. TODO: remove these and just add jdbc props to request.
     properties.setProperty("allowPublicKeyRetrieval", "true");

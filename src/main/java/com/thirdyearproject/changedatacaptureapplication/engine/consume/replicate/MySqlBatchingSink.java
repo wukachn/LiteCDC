@@ -50,7 +50,9 @@ public class MySqlBatchingSink extends MySqlSink {
             }
 
             try (var stmt =
-                jdbcConnection.getConnection().prepareStatement(buildUpsertSqlString(firstEvent, true))) {
+                jdbcConnection
+                    .getConnection()
+                    .prepareStatement(buildUpsertSqlString(firstEvent, true))) {
               for (var currentEvent : currentBatch) {
                 setPreparedStatementValues(currentEvent, stmt);
                 stmt.addBatch();
@@ -135,10 +137,10 @@ public class MySqlBatchingSink extends MySqlSink {
   }
 
   private void handlePossibleSchemaChange(
-          TableIdentifier tableId, List<ColumnDetails> beforeDetails, List<ColumnDetails> afterDetails)
-          throws SQLException {
+      TableIdentifier tableId, List<ColumnDetails> beforeDetails, List<ColumnDetails> afterDetails)
+      throws SQLException {
     var possibleSchemaChangeSql =
-            compareStructureAndBuildSchemaChange(tableId, beforeDetails, afterDetails);
+        compareStructureAndBuildSchemaChange(tableId, beforeDetails, afterDetails);
     if (!possibleSchemaChangeSql.isEmpty()) {
       try (var stmt = jdbcConnection.getConnection().createStatement()) {
         stmt.execute(possibleSchemaChangeSql);

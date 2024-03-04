@@ -1,7 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.kafka;
 
+import com.thirdyearproject.changedatacaptureapplication.api.model.request.TopicStrategy;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
-import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +23,14 @@ public class KafkaProducerService {
     this.kafkaTemplate = kafkaTemplate;
   }
 
-  // Currently using auto.create.topics.enable = true [locally], no need to handle topic creation
-  public void sendEvent(ChangeEvent changeEvent, TableIdentifier tableId) {
-    var topic = String.format("%s.%s", prefix, tableId.getStringFormat());
+  public void sendEvent(ChangeEvent changeEvent, TopicStrategy topicStrategy) {
+    String topic;
+    if (topicStrategy == TopicStrategy.PER_TABLE) {
+      topic =
+          String.format("%s.%s", prefix, changeEvent.getMetadata().getTableId().getStringFormat());
+    } else {
+      topic = String.format("%s.all_tables", prefix);
+    }
 
     CompletableFuture<SendResult<String, ChangeEvent>> future =
         kafkaTemplate.send(topic, changeEvent);
@@ -33,14 +38,14 @@ public class KafkaProducerService {
     future.whenComplete(
         (result, ex) -> {
           if (ex == null) {
-            /*log.info(
-            "Sent message=["
-                + changeEvent
-                + "] with offset=["
-                + result.getRecordMetadata().offset()
-                + "] with topic=["
-                + result.getRecordMetadata().topic()
-                + "]");*/
+            log.info(
+                "Sent message=["
+                    + changeEvent
+                    + "] with offset=["
+                    + result.getRecordMetadata().offset()
+                    + "] with topic=["
+                    + result.getRecordMetadata().topic()
+                    + "]");
           } else {
             log.error("Unable to send message=[" + changeEvent + "] due to : " + ex.getMessage());
           }

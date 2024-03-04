@@ -1,5 +1,6 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.change;
 
+import com.thirdyearproject.changedatacaptureapplication.api.model.request.TopicStrategy;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventSink;
@@ -27,18 +28,21 @@ public class ChangeDataConsumer implements Runnable {
   private List<TableIdentifier> tables;
   private ChangeEventSink eventProcessor;
   private MetricsService metricsService;
+  private TopicStrategy topicStrategy;
 
   public ChangeDataConsumer(
       String bootstrapServer,
       String topicPrefix,
       List<TableIdentifier> tables,
       ChangeEventSink eventProcessor,
-      MetricsService metricsService) {
+      MetricsService metricsService,
+      TopicStrategy topicStrategy) {
     this.consumer = createConsumer(bootstrapServer, tables);
     this.topicPrefix = topicPrefix;
     this.tables = tables;
     this.eventProcessor = eventProcessor;
     this.metricsService = metricsService;
+    this.topicStrategy = topicStrategy;
   }
 
   private KafkaConsumer<String, ChangeEvent> createConsumer(
@@ -60,7 +64,13 @@ public class ChangeDataConsumer implements Runnable {
 
   @Override
   public void run() {
-    var topics = tables.stream().map(table -> topicPrefix + "." + table.getStringFormat()).toList();
+    List<String> topics;
+    if (topicStrategy == TopicStrategy.PER_TABLE) {
+      topics = tables.stream().map(table -> topicPrefix + "." + table.getStringFormat()).toList();
+    } else {
+      topics = List.of(topicPrefix + ".all_tables");
+    }
+
     consumer.subscribe(topics);
     try {
       while (true) {

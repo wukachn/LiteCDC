@@ -31,13 +31,13 @@ public class MySqlRegularSink extends MySqlSink {
           if (columnDetailsMap.containsKey(tableId)) {
             var beforeDetails = columnDetailsMap.get(tableId);
             var possibleSchemaChangeSql =
-                    compareStructureAndBuildSchemaChange(tableId, beforeDetails, afterDetails);
+                compareStructureAndBuildSchemaChange(tableId, beforeDetails, afterDetails);
             if (!possibleSchemaChangeSql.isEmpty()) {
               stmt.executeBatch();
               conn.commit();
               currentBatch = 0;
 
-              try (var alterStmt = jdbcConnection.getConnection().createStatement()){
+              try (var alterStmt = jdbcConnection.getConnection().createStatement()) {
                 alterStmt.execute(possibleSchemaChangeSql);
               }
             }
