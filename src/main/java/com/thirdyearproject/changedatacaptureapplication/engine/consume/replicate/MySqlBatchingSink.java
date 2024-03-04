@@ -1,6 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySqlConnectionConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.engine.MySqlBatchingConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.CRUD;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnDetails;
@@ -20,7 +21,7 @@ public class MySqlBatchingSink extends MySqlSink {
   private static final int BATCH_SIZE = 1000;
 
   public MySqlBatchingSink(MySqlConnectionConfiguration connectionConfig) {
-    super(connectionConfig);
+    super(new MySqlBatchingConnection(connectionConfig));
     log.info("Consuming change events in BATCHING mode.");
   }
 

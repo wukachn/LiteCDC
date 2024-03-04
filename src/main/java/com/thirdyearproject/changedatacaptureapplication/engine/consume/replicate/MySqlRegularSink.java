@@ -1,6 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySqlConnectionConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.CRUD;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import java.sql.SQLException;
@@ -13,7 +14,7 @@ public class MySqlRegularSink extends MySqlSink {
   private static final int BATCH_SIZE = 1000;
 
   public MySqlRegularSink(MySqlConnectionConfiguration connectionConfig) {
-    super(connectionConfig);
+    super(new JdbcConnection(connectionConfig));
   }
 
   @Override

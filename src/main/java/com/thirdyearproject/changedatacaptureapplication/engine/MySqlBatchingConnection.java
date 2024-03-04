@@ -1,13 +1,12 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.produce;
+package com.thirdyearproject.changedatacaptureapplication.engine;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.ConnectionConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class PostgresReplicationConnection extends JdbcConnection {
-  public PostgresReplicationConnection(ConnectionConfiguration connectionConfig) {
+public class MySqlBatchingConnection extends JdbcConnection {
+  public MySqlBatchingConnection(ConnectionConfiguration connectionConfig) {
     super(connectionConfig);
   }
 
@@ -15,8 +14,7 @@ public class PostgresReplicationConnection extends JdbcConnection {
   public Connection getConnection() throws SQLException {
     if (super.connection == null || super.connection.isClosed()) {
       var properties = connectionConfig.getBasicJdbcProperties();
-      properties.setProperty("replication", "database");
-      properties.setProperty("preferQueryMode", "simple");
+      properties.setProperty("rewriteBatchedStatements", "true");
       super.connection = DriverManager.getConnection(connectionConfig.getJdbcUrl(), properties);
     }
     return this.connection;

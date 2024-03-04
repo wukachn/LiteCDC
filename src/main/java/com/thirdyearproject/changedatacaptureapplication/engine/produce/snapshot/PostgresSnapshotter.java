@@ -2,6 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine.produce.snapsho
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.ConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
+import com.thirdyearproject.changedatacaptureapplication.engine.PostgresReplicationConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.*;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.CRUD;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
@@ -10,7 +11,6 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Col
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.PostgresMetadata;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
-import com.thirdyearproject.changedatacaptureapplication.engine.produce.PostgresReplicationConnection;
 import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;

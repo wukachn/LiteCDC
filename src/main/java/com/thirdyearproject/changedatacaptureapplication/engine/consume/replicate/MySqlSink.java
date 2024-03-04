@@ -1,6 +1,5 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate;
 
-import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySqlConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.CRUD;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
@@ -25,8 +24,8 @@ public abstract class MySqlSink implements ChangeEventSink {
   protected JdbcConnection jdbcConnection;
   protected Map<TableIdentifier, List<ColumnDetails>> columnDetailsMap;
 
-  public MySqlSink(MySqlConnectionConfiguration connectionConfig) {
-    this.jdbcConnection = new JdbcConnection(connectionConfig);
+  public MySqlSink(JdbcConnection jdbcConnection) {
+    this.jdbcConnection = jdbcConnection;
     this.columnDetailsMap = new HashMap<>();
   }
 
