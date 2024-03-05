@@ -41,6 +41,7 @@ public class MySqlTransactionalSink extends MySqlSink {
               try (var alterStmt = jdbcConnection.getConnection().createStatement()) {
                 alterStmt.execute(possibleSchemaChangeSql);
               }
+              columnDetailsMap.put(tableId, afterDetails);
             }
           } else {
             columnDetailsMap.put(tableId, afterDetails);

@@ -239,7 +239,7 @@ public abstract class MySqlSink implements ChangeEventSink {
   }
 
   protected String quoteIfString(Object value) {
-    if (value.getClass().getName().equals("java.lang.String")) {
+    if (value != null && value.getClass().getName().equals("java.lang.String")) {
       return "\"" + value + "\"";
     }
     return String.valueOf(value);

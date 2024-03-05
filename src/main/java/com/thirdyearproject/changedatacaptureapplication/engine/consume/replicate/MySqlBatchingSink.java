@@ -146,6 +146,7 @@ public class MySqlBatchingSink extends MySqlSink {
       try (var stmt = jdbcConnection.getConnection().createStatement()) {
         stmt.execute(possibleSchemaChangeSql);
       }
+      columnDetailsMap.put(tableId, afterDetails);
     }
   }
 }
