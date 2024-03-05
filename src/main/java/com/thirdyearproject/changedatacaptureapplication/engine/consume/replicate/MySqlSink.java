@@ -1,6 +1,5 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate;
 
-import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySqlConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.CRUD;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
@@ -15,9 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public abstract class MySqlSink implements ChangeEventSink {
-  protected static String DELETE_ROW = "DELETE FROM %s WHERE %s;";
-  protected static String UPSERT_ROW =
-      "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;";
+  protected static String DELETE_ROW = "DELETE FROM %s WHERE %s";
+  protected static String UPSERT_ROW = "INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s";
   private static String ADD_COLUMN = "ALTER TABLE %s ADD COLUMN %s %s;";
   private static String DROP_COLUMN = "ALTER TABLE %s DROP COLUMN %s;";
   private static String ALTER_COLUMN = "ALTER TABLE %s MODIFY %s %s %s;";
@@ -26,8 +24,8 @@ public abstract class MySqlSink implements ChangeEventSink {
   protected JdbcConnection jdbcConnection;
   protected Map<TableIdentifier, List<ColumnDetails>> columnDetailsMap;
 
-  public MySqlSink(MySqlConnectionConfiguration connectionConfig) {
-    this.jdbcConnection = new JdbcConnection(connectionConfig);
+  public MySqlSink(JdbcConnection jdbcConnection) {
+    this.jdbcConnection = jdbcConnection;
     this.columnDetailsMap = new HashMap<>();
   }
 
@@ -47,6 +45,7 @@ public abstract class MySqlSink implements ChangeEventSink {
   private void createDatabasesIfNotExists(List<ChangeEvent> changeEvents) {
     var createDatabasesSql = createDatabaseStatements(changeEvents);
     try (var stmt = jdbcConnection.getConnection().createStatement()) {
+      jdbcConnection.setAutoCommit(true);
       stmt.execute(createDatabasesSql);
     } catch (SQLException e) {
       log.error("Could not ensure destination databases were created.", e);
@@ -59,6 +58,7 @@ public abstract class MySqlSink implements ChangeEventSink {
       return;
     }
     try (var stmt = jdbcConnection.getConnection().createStatement()) {
+      jdbcConnection.setAutoCommit(true);
       stmt.execute(createTablesSql);
     } catch (SQLException e) {
       log.error("Could not ensure destination tables were created.", e);
@@ -125,7 +125,7 @@ public abstract class MySqlSink implements ChangeEventSink {
   }
 
   // No support for column renaming.
-  protected void compareStructureAndAlterTable(
+  protected String compareStructureAndBuildSchemaChange(
       TableIdentifier tableIdentifier,
       List<ColumnDetails> beforeDetails,
       List<ColumnDetails> afterDetails)
@@ -175,25 +175,30 @@ public abstract class MySqlSink implements ChangeEventSink {
       }
     }
 
-    var sqlString = sqlBuilder.toString();
-    if (!sqlString.isEmpty()) {
-      try (var tableStmt = jdbcConnection.getConnection().createStatement()) {
-        tableStmt.execute(sqlBuilder.toString());
-      }
-    }
+    return sqlBuilder.toString();
   }
 
-  protected String buildUpsertSqlString(ChangeEvent changeEvent) {
+  protected String buildUpsertSqlString(ChangeEvent changeEvent, boolean isPreparedStatement) {
     var table = String.format("cdc_%s", changeEvent.getMetadata().getTableId().getStringFormat());
 
     var columnNames =
         changeEvent.getAfter().stream().map(column -> column.getDetails().getName()).toList();
     var namesCSV = String.format("%s,%s", String.join(",", columnNames), "cdc_last_updated");
 
-    var valuesCSV =
-        IntStream.range(0, changeEvent.getAfter().size() + 1)
-            .mapToObj(i -> "?")
-            .collect(Collectors.joining(","));
+    var valuesCSV = "";
+    if (isPreparedStatement) {
+      valuesCSV =
+          IntStream.range(0, changeEvent.getAfter().size() + 1)
+              .mapToObj(i -> "?")
+              .collect(Collectors.joining(","));
+    } else {
+      var columnValues =
+          changeEvent.getAfter().stream().map(column -> quoteIfString(column.getValue())).toList();
+      valuesCSV =
+          String.format(
+              "%s,%s",
+              String.join(",", columnValues), quoteIfString(changeEvent.getMetadata().getOffset()));
+    }
 
     var updateDetails =
         changeEvent.getAfter().stream()
@@ -213,12 +218,6 @@ public abstract class MySqlSink implements ChangeEventSink {
     return String.format(UPSERT_ROW, table, namesCSV, valuesCSV, updateDetailsCSV);
   }
 
-  protected void handleDelete(ChangeEvent changeEvent) throws SQLException {
-    try (var stmt = jdbcConnection.getConnection().createStatement()) {
-      stmt.execute(buildDeleteSql(changeEvent));
-    }
-  }
-
   protected String buildDeleteSql(ChangeEvent changeEvent) {
     var tableId = "cdc_" + changeEvent.getMetadata().getTableId().getStringFormat();
 
@@ -233,13 +232,14 @@ public abstract class MySqlSink implements ChangeEventSink {
       }
     }
     conditionBuilder.append(
-        String.format("cdc_last_updated < %s", quoteIfString(changeEvent.getMetadata().getOffset())));
+        String.format(
+            "cdc_last_updated < %s", quoteIfString(changeEvent.getMetadata().getOffset())));
 
     return String.format(DELETE_ROW, tableId, conditionBuilder);
   }
 
   protected String quoteIfString(Object value) {
-    if (value.getClass().getName().equals("java.lang.String")) {
+    if (value != null && value.getClass().getName().equals("java.lang.String")) {
       return "\"" + value + "\"";
     }
     return String.valueOf(value);

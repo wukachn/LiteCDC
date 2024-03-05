@@ -30,13 +30,8 @@ public class MySqlConnectionConfiguration implements ConnectionConfiguration {
     properties.setProperty("user", user);
     properties.setProperty("password", password);
     properties.setProperty("allowMultiQueries", "true");
-
-    properties.setProperty("rewriteBatchedStatements", "true");
-
-    // Needed for current local set up. TODO: remove these and just add jdbc props to request.
     properties.setProperty("allowPublicKeyRetrieval", "true");
     properties.setProperty("useSSL", "false");
-
     return properties;
   }
 }

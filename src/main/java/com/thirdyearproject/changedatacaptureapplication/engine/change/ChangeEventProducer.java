@@ -1,5 +1,6 @@
 package com.thirdyearproject.changedatacaptureapplication.engine.change;
 
+import com.thirdyearproject.changedatacaptureapplication.api.model.request.TopicStrategy;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.kafka.KafkaProducerService;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
@@ -8,8 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ChangeEventProducer {
-  private KafkaProducerService kafkaProducerService;
-  private MetricsService metricsService;
+  private final KafkaProducerService kafkaProducerService;
+  private final MetricsService metricsService;
+  private TopicStrategy topicStrategy;
 
   public ChangeEventProducer(
       KafkaProducerService kafkaProducerService, MetricsService metricsService) {
@@ -20,6 +22,10 @@ public class ChangeEventProducer {
   public void sendEvent(ChangeEvent changeEvent) {
     changeEvent.getMetadata().setProducedTime(Instant.now().toEpochMilli());
     metricsService.produceEvent(changeEvent);
-    kafkaProducerService.sendEvent(changeEvent, changeEvent.getMetadata().getTableId());
+    kafkaProducerService.sendEvent(changeEvent, topicStrategy);
+  }
+
+  public void setTopicStrategy(TopicStrategy topicStrategy) {
+    this.topicStrategy = topicStrategy;
   }
 }

@@ -2,9 +2,9 @@ package com.thirdyearproject.changedatacaptureapplication.engine.produce.streami
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.ConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
+import com.thirdyearproject.changedatacaptureapplication.engine.PostgresReplicationConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
-import com.thirdyearproject.changedatacaptureapplication.engine.produce.PostgresReplicationConnection;
 import java.io.IOException;
 import java.sql.SQLException;
 import lombok.extern.slf4j.Slf4j;

@@ -1,7 +1,6 @@
-package com.thirdyearproject.changedatacaptureapplication.engine.produce;
+package com.thirdyearproject.changedatacaptureapplication.engine;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.ConnectionConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;

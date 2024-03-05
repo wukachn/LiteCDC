@@ -31,6 +31,7 @@ public class PgOutputMessageDecoder {
       LocalDate.of(2000, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
   private static final Map<Integer, List<ColumnDetails>> tableColumnMap = new HashMap();
   private static final Map<Integer, TableIdentifier> relationIdToTableId = new HashMap();
+  private static final String NULL_IDENTIFIER = "*NULL*";
   private final PostgresTransactionProcessor transactionProcessor;
   private JdbcConnection jdbcConnection;
   private Long currentTxId;
@@ -220,15 +221,16 @@ public class PgOutputMessageDecoder {
       var i = 0;
       for (var columnDetails : columnDetailsList) {
         var type = columnDetails.getSqlType();
-        Object value;
-        switch (type) {
-          case Types.BOOLEAN -> value = Boolean.valueOf(valuesArray[i]);
-          case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIT -> value =
-              Integer.valueOf(valuesArray[i]);
-          case Types.BIGINT -> value = Long.valueOf(valuesArray[i]);
-          case Types.FLOAT -> value = Float.valueOf(valuesArray[i]);
-          case Types.DOUBLE -> value = Double.valueOf(valuesArray[i]);
-          default -> value = String.valueOf(valuesArray[i]);
+        Object value = null;
+        if (!valuesArray[i].equals(NULL_IDENTIFIER)) {
+          switch (type) {
+            case Types.BOOLEAN -> value = Boolean.valueOf(valuesArray[i]);
+            case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIT -> value = Integer.valueOf(valuesArray[i]);
+            case Types.BIGINT -> value = Long.valueOf(valuesArray[i]);
+            case Types.FLOAT -> value = Float.valueOf(valuesArray[i]);
+            case Types.DOUBLE -> value = Double.valueOf(valuesArray[i]);
+            default -> value = String.valueOf(valuesArray[i]);
+          }
         }
         columnList.add(ColumnWithData.builder().details(columnDetails).value(value).build());
         i++;
@@ -272,7 +274,7 @@ public class PgOutputMessageDecoder {
       } else {
         /* statusValue = 'n' (NULL value) or 'u' (unchanged TOASTED value) */
 
-        values = (statusValue == 'n') ? values + "null" : values + "UTOAST";
+        values = (statusValue == 'n') ? values + NULL_IDENTIFIER : values + "UTOAST";
       }
     }
 

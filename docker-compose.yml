@@ -59,6 +59,8 @@ services:
       - "postgres"
       - "-c"
       - "wal_level=logical"
+      - "-c"
+      - "wal_receiver_timeout=0"
 
   mysql:
     image: mysql:latest

@@ -11,6 +11,7 @@ public class PipelineFactory {
   private final MetricsService metricsService;
 
   public Pipeline create(PipelineConfiguration config) {
+    changeEventProducer.setTopicStrategy(config.getKafkaConfig().getTopicStrategy());
     var snapshotter = config.getSourceConfig().getSnapshotter(changeEventProducer, metricsService);
     var streamer = config.getSourceConfig().getStreamer(changeEventProducer, metricsService);
     return Pipeline.builder()

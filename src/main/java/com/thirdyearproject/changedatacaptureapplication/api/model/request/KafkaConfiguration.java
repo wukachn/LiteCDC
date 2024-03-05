@@ -12,4 +12,5 @@ public class KafkaConfiguration {
   // TODO: Need to change remove these references in application.yml (how producer is created)
   @NonNull String topicPrefix;
   @NonNull String bootstrapServer;
+  @NonNull TopicStrategy topicStrategy;
 }
