@@ -31,9 +31,9 @@ public class PipelineConfiguration {
             "Incompatible configuration: Cannot use a single topic for a batching sink.");
       }
 
-      if (sinkType == MySQLSinkType.REGULAR && topicStrategy == TopicStrategy.PER_TABLE) {
+      if (sinkType == MySQLSinkType.TRANSACTIONAL && topicStrategy == TopicStrategy.PER_TABLE) {
         throw new PipelineConfigurationException(
-            "Incompatible configuration: Cannot use a topic per table for your regular sink.");
+            "Incompatible configuration: Cannot use a topic per table for your transactional sink.");
       }
     }
   }

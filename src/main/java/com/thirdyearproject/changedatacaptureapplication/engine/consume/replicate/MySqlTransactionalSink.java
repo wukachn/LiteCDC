@@ -9,11 +9,11 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class MySqlRegularSink extends MySqlSink {
+public class MySqlTransactionalSink extends MySqlSink {
 
   private static final int BATCH_SIZE = 1000;
 
-  public MySqlRegularSink(MySqlConnectionConfiguration connectionConfig) {
+  public MySqlTransactionalSink(MySqlConnectionConfiguration connectionConfig) {
     super(new JdbcConnection(connectionConfig));
   }
 

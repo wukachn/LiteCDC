@@ -3,7 +3,7 @@ package com.thirdyearproject.changedatacaptureapplication.api.model.request.data
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.DestinationConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventSink;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.MySqlBatchingSink;
-import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.MySqlRegularSink;
+import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.MySqlTransactionalSink;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -20,8 +20,8 @@ public class MySqlDestinationConfiguration implements DestinationConfiguration {
 
   @Override
   public ChangeEventSink createChangeEventSink() {
-    if (sinkType == MySQLSinkType.REGULAR) {
-      return new MySqlRegularSink(connectionConfig);
+    if (sinkType == MySQLSinkType.TRANSACTIONAL) {
+      return new MySqlTransactionalSink(connectionConfig);
     } else {
       return new MySqlBatchingSink(connectionConfig);
     }
