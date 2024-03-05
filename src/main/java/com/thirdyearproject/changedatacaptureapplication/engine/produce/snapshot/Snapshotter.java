@@ -48,10 +48,11 @@ public abstract class Snapshotter {
 
       log.info("Step 3: Snapshotting content of tables");
       snapshotTables(tables);
+
+      log.info("Snapshot Complete.");
     } catch (Exception e) {
       throw new PipelineException("Pipeline failed during snapshotting phase.", e);
     } finally {
-      log.info("Snapshot Complete.");
       snapshotComplete();
     }
     metricsService.completingSnapshot();
