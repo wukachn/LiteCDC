@@ -60,7 +60,7 @@ public class MySqlTransactionalSink extends MySqlSink {
         conn.commit();
       }
     } catch (SQLException e) {
-      log.error("HELP!", e);
+      log.error("Failed to process change events.", e);
     }
   }
 }
