@@ -15,6 +15,7 @@ public class MySqlTransactionalSink extends MySqlSink {
 
   public MySqlTransactionalSink(MySqlConnectionConfiguration connectionConfig) {
     super(new JdbcConnection(connectionConfig));
+    log.info("Consuming change events in TRANSACTIONAL mode.");
   }
 
   @Override
@@ -37,7 +38,6 @@ public class MySqlTransactionalSink extends MySqlSink {
               stmt.executeBatch();
               conn.commit();
               currentBatch = 0;
-
               try (var alterStmt = jdbcConnection.getConnection().createStatement()) {
                 alterStmt.execute(possibleSchemaChangeSql);
               }

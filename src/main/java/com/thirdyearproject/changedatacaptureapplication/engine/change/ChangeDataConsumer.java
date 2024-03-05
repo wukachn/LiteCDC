@@ -37,22 +37,29 @@ public class ChangeDataConsumer implements Runnable {
       ChangeEventSink eventProcessor,
       MetricsService metricsService,
       TopicStrategy topicStrategy) {
-    this.consumer = createConsumer(bootstrapServer, tables);
-    this.topicPrefix = topicPrefix;
     this.tables = tables;
+    this.topicStrategy = topicStrategy;
+    this.consumer = createConsumer(bootstrapServer);
+    this.topicPrefix = topicPrefix;
     this.eventProcessor = eventProcessor;
     this.metricsService = metricsService;
-    this.topicStrategy = topicStrategy;
   }
 
   private KafkaConsumer<String, ChangeEvent> createConsumer(
-      String bootstrapServer, List<TableIdentifier> tables) {
+      String bootstrapServer) {
     Properties properties = new Properties();
     properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
-    properties.put(
-        ConsumerConfig.GROUP_INSTANCE_ID_CONFIG,
-        "cdc_" + tables.get(0).getSchema() + UUID.randomUUID());
-    properties.put(ConsumerConfig.GROUP_ID_CONFIG, "cdc_" + tables.get(0).getSchema());
+    String groupInstanceId;
+    String groupId;
+    if (topicStrategy == TopicStrategy.PER_TABLE) {
+      groupInstanceId = "cdc_" + tables.get(0).getSchema() + UUID.randomUUID();
+      groupId = "cdc_" + tables.get(0).getSchema();
+    } else {
+      groupInstanceId = "cdc_all_tables" + UUID.randomUUID();
+      groupId = "cdc_all_tables";
+    }
+    properties.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, groupInstanceId);
+    properties.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
     properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
     properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ChangeEventDeserializer.class);
     properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
