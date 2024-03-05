@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.Setter;
 import org.javatuples.Pair;
 import org.springframework.stereotype.Service;
@@ -143,5 +144,12 @@ public class MetricsService {
   public void consumeEvent(ChangeEvent changeEvent) {
     var producedTime = changeEvent.getMetadata().getProducedTime();
     this.producerConsumerTimeLagMs = Instant.now().toEpochMilli() - producedTime;
+  }
+
+  public void initiateTables(Set<TableIdentifier> tables) {
+    for (var table : tables) {
+      snapshotTracker.put(table, Pair.with(0L, false));
+      crudTracker.put(table, CrudCount.builder().build());
+    }
   }
 }
