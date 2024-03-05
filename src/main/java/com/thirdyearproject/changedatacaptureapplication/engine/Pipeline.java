@@ -21,6 +21,7 @@ public class Pipeline implements Closeable, Runnable {
 
   @Override
   public void close() {
+    log.info("Closing pipeline.");
     metricsService.clear();
   }
 
