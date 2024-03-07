@@ -1,5 +1,3 @@
-// This file is heavily inspired by debezium
-// https://github.com/debezium/debezium/blob/ef69dbe91c482d4ea505368b3a1a55c40eeb5ffb/debezium-connector-postgres/src/main/java/io/debezium/connector/postgresql/connection/pgoutput/PgOutputMessageDecoder.java#L722
 package com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
@@ -11,8 +9,8 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Col
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.PostgresMetadata;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.util.PostgresTypeUtils;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
@@ -24,16 +22,21 @@ import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.replication.LogSequenceNumber;
 
+/*
+This file is heavily inspired by the following repositories:
+https://github.com/debezium/debezium/blob/ef69dbe91c482d4ea505368b3a1a55c40eeb5ffb/debezium-connector-postgres/src/main/java/io/debezium/connector/postgresql/connection/pgoutput/PgOutputMessageDecoder.java#L722
+https://github.com/davyam/pgEasyReplication/blob/master/src/main/java/com/dg/easyReplication/Decode.java#
+ */
 @Slf4j
 public class PgOutputMessageDecoder {
 
   private static final Instant PG_EPOCH =
       LocalDate.of(2000, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
-  private static final Map<Integer, List<ColumnDetails>> tableColumnMap = new HashMap();
-  private static final Map<Integer, TableIdentifier> relationIdToTableId = new HashMap();
+  private static final Map<Integer, List<ColumnDetails>> tableColumnMap = new HashMap<>();
+  private static final Map<Integer, TableIdentifier> relationIdToTableId = new HashMap<>();
   private static final String NULL_IDENTIFIER = "*NULL*";
   private final PostgresTransactionProcessor transactionProcessor;
-  private JdbcConnection jdbcConnection;
+  private final JdbcConnection jdbcConnection;
   private Long currentTxId;
   private Long transactionCommitTime;
 
@@ -56,14 +59,14 @@ public class PgOutputMessageDecoder {
     }
   }
 
-  private LogSequenceNumber handleCommitMessage(ByteBuffer buffer) throws SQLException {
-    int flags = buffer.get(); // flags, currently unused
-    var lsn = buffer.getLong(); // LSN of the commit
+  private LogSequenceNumber handleCommitMessage(ByteBuffer buffer) {
+    int flags = buffer.get(); // currently unused
+    var lsn = buffer.getLong();
     var commitLsn = buffer.getLong();
     return LogSequenceNumber.valueOf(commitLsn);
   }
 
-  private void handleBeginMessage(ByteBuffer buffer) throws SQLException {
+  private void handleBeginMessage(ByteBuffer buffer) {
     var lsn = buffer.getLong();
     this.transactionCommitTime = PG_EPOCH.plus(buffer.getLong(), ChronoUnit.MICROS).toEpochMilli();
     this.currentTxId = Integer.toUnsignedLong(buffer.getInt());
@@ -148,8 +151,7 @@ public class PgOutputMessageDecoder {
 
     var after = buildColumnData(relationId, buffer);
 
-    var changeEvent = ChangeEvent.builder().metadata(metadata).before(null).after(after).build();
-    return changeEvent;
+    return ChangeEvent.builder().metadata(metadata).before(null).after(after).build();
   }
 
   private ChangeEvent decodeUpdate(ByteBuffer buffer, LogSequenceNumber lsn) {
@@ -180,9 +182,7 @@ public class PgOutputMessageDecoder {
 
     var after = buildColumnData(relationId, buffer);
 
-    var changeEvent = ChangeEvent.builder().metadata(metadata).before(before).after(after).build();
-
-    return changeEvent;
+    return ChangeEvent.builder().metadata(metadata).before(before).after(after).build();
   }
 
   private ChangeEvent decodeDelete(ByteBuffer buffer, LogSequenceNumber lsn) {
@@ -202,88 +202,53 @@ public class PgOutputMessageDecoder {
 
     var before = buildColumnData(relationId, buffer);
 
-    var changeEvent = ChangeEvent.builder().metadata(metadata).before(before).after(null).build();
-
-    return changeEvent;
+    return ChangeEvent.builder().metadata(metadata).before(before).after(null).build();
   }
 
   private List<ColumnWithData> buildColumnData(Integer relationId, ByteBuffer buffer) {
-    try {
-      Map<String, Object> tupleMap = (Map<String, Object>) parseTupleData(buffer);
-
-      var values = (String) tupleMap.get("values");
-      var csv = values.substring(1, values.length() - 1);
-      String[] valuesArray = csv.split(",");
-
-      var columnList = new ArrayList<ColumnWithData>();
-
-      var columnDetailsList = tableColumnMap.get(relationId);
-      var i = 0;
-      for (var columnDetails : columnDetailsList) {
-        var type = columnDetails.getSqlType();
-        Object value = null;
-        if (!valuesArray[i].equals(NULL_IDENTIFIER)) {
-          switch (type) {
-            case Types.BOOLEAN -> value = Boolean.valueOf(valuesArray[i]);
-            case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIT -> value = Integer.valueOf(valuesArray[i]);
-            case Types.BIGINT -> value = Long.valueOf(valuesArray[i]);
-            case Types.FLOAT -> value = Float.valueOf(valuesArray[i]);
-            case Types.DOUBLE -> value = Double.valueOf(valuesArray[i]);
-            default -> value = String.valueOf(valuesArray[i]);
-          }
+    var columnList = new ArrayList<ColumnWithData>();
+    var values = getColumnValues(buffer);
+    var columnDetailsList = tableColumnMap.get(relationId);
+    var i = 0;
+    for (var columnDetails : columnDetailsList) {
+      var type = columnDetails.getSqlType();
+      Object value = null;
+      if (!values.get(i).equals(NULL_IDENTIFIER)) {
+        switch (type) {
+          case Types.BOOLEAN -> value = Boolean.valueOf(values.get(i));
+          case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIT -> value = Integer.valueOf(values.get(i));
+          case Types.BIGINT -> value = Long.valueOf(values.get(i));
+          case Types.FLOAT -> value = Float.valueOf(values.get(i));
+          case Types.DOUBLE -> value = Double.valueOf(values.get(i));
+          default -> value = String.valueOf(values.get(i));
         }
-        columnList.add(ColumnWithData.builder().details(columnDetails).value(value).build());
-        i++;
       }
-      return columnList;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+      columnList.add(ColumnWithData.builder().details(columnDetails).value(value).build());
+      i++;
     }
+    return columnList;
   }
 
-  // Source:
-  // https://github.com/davyam/pgEasyReplication/blob/master/src/main/java/com/dg/easyReplication/Decode.java#L220
-  // Whole file is heavily inspired by that link and debezium.
-  public Object parseTupleData(ByteBuffer buffer) throws UnsupportedEncodingException {
+  public List<String> getColumnValues(ByteBuffer buffer) {
+    List<String> values = new ArrayList<>();
 
-    HashMap<String, Object> data = new HashMap<String, Object>();
-    Object result = data;
+    short numColumns = buffer.getShort();
+    for (int i = 0; i < numColumns; i++) {
+      // Identifies the data as NULL value ('n') or unchanged TOASTed value ('u') or text formatted value ('t').
+      char statusValue = (char) buffer.get();
 
-    String values = "";
-
-    short columns = buffer.getShort(); /* (Int16) Number of columns. */
-
-    for (int i = 0; i < columns; i++) {
-
-      char statusValue = (char) buffer.get(); /*
-       * (Byte1) Either identifies the data as NULL value ('n') or unchanged TOASTed value ('u') or text formatted value ('t').
-       */
-
-      if (i > 0) values += ",";
-
+      // Add text formatted value to values list.
       if (statusValue == 't') {
-
-        int lenValue = buffer.getInt(); /* (Int32) Length of the column value. */
-
-        buffer.position();
-        byte[] bytes = new byte[lenValue];
+        int columnValueLength = buffer.getInt();
+        byte[] bytes = new byte[columnValueLength];
         buffer.get(bytes);
-
-        values += new String(bytes, "UTF-8"); /* (ByteN) The value of the column, in text format. */
-
+        values.add(new String(bytes, StandardCharsets.UTF_8));
       } else {
-        /* statusValue = 'n' (NULL value) or 'u' (unchanged TOASTED value) */
-
-        values = (statusValue == 'n') ? values + NULL_IDENTIFIER : values + "UTOAST";
+        // Use NULL_IDENTIFIER to eventually convert into real null value.
+        values.add((statusValue == 'n') ? NULL_IDENTIFIER : "UTOAST");
       }
     }
-
-    data.put("numColumns", columns);
-    data.put("values", "(" + values + ")");
-
-    result = data;
-
-    return result;
+    return values;
   }
 
   private String readStringFromBuffer(ByteBuffer buffer) {
