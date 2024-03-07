@@ -15,10 +15,4 @@ public class ChangeDataCaptureApplication {
   public static void main(String[] args) {
     SpringApplication.run(ChangeDataCaptureApplication.class, args);
   }
-
-  @Bean
-  ChangeEventProducer changeEventProducer(
-      KafkaProducerService kafkaProducerService, MetricsService metricsService) {
-    return new ChangeEventProducer(kafkaProducerService, metricsService);
-  }
 }

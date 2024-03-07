@@ -15,9 +15,8 @@ public class PipelineInitializer {
   private final PipelineFactory pipelineFactory;
   private Thread pipelineThread;
 
-  public PipelineInitializer(
-      ChangeEventProducer changeEventProducer, MetricsService metricsServer) {
-    this.pipelineFactory = new PipelineFactory(changeEventProducer, metricsServer);
+  public PipelineInitializer(MetricsService metricsServer) {
+    this.pipelineFactory = new PipelineFactory(metricsServer);
   }
 
   public synchronized void runPipeline(PipelineConfiguration config) {
