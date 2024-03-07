@@ -10,20 +10,31 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.request.Topic
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.postgres.PostgresConnectionConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.postgres.PostgresSourceConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
+import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.engine.kafka.serialization.ChangeEventDeserializer;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.PipelineStatus;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 import java.util.Set;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,9 +49,6 @@ import org.testcontainers.utility.DockerImageName;
 public class BigTest {
 
   static KafkaContainer kafkaContainer;
-  static String topic = "test-topic";
-
-  JdbcConnection jdbcConnection;
 
   private static DockerImageName myImage = DockerImageName.parse("debezium/postgres:16-alpine")
       .asCompatibleSubstituteFor("postgres");
@@ -65,44 +73,15 @@ public class BigTest {
             .port(postgresContainer.getFirstMappedPort()).host(postgresContainer.getHost())
             .user(postgresContainer.getUsername())
             .password(postgresContainer.getPassword()).build());
-    log.info("befoer");
+
     try (var statement = connection.getConnection().createStatement()) {
-      log.info("Creating tables");
-      statement.execute("""
-          CREATE TABLE IF NOT EXISTS newtable1 (position INT PRIMARY KEY, name VARCHAR(16));
-          CREATE TABLE IF NOT EXISTS newtable2 (position INT PRIMARY KEY, name VARCHAR(16));
-          CREATE TABLE Towns (
-            id SERIAL UNIQUE NOT NULL,
-            code VARCHAR(10) NOT NULL,
-            article TEXT,
-            name TEXT NOT NULL,
-            department VARCHAR(4) NOT NULL,
-            UNIQUE (code, department)
-          );
-                    
-          DO $$
-          DECLARE
-              table_record RECORD;
-          BEGIN
-              FOR table_record IN
-                  SELECT table_name
-                  FROM information_schema.tables
-                  WHERE table_schema = 'public'
-              LOOP
-                  EXECUTE 'ALTER TABLE ' || table_record.table_name || ' REPLICA IDENTITY FULL;';
-              END LOOP;
-          END $$;
-                    
-          INSERT INTO newtable1 VALUES (1, 'one');
-          INSERT INTO newtable1 VALUES (2, 'two');
-          INSERT INTO newtable1 VALUES (3, 'three');
-                    
-          INSERT INTO newtable2 VALUES (100, 'one hundo');
-          INSERT INTO newtable2 VALUES (200, 'two hundo');
-          INSERT INTO newtable2 VALUES (300, 'three hundo');
-          INSERT INTO newtable2 VALUES (400, 'four hundo');""");
+      String sqlFilePath = "db_setup/setup_postgres.sql";
+      String sqlString = new String(Files.readAllBytes(Paths.get(sqlFilePath)));
+      statement.execute(sqlString);
       log.info("Created tables");
     } catch (SQLException e) {
+      throw new RuntimeException(e);
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -113,7 +92,7 @@ public class BigTest {
   }
 
   @Test
-  public void test() throws Exception {
+  public void test() {
     var config = PipelineConfiguration.builder().kafkaConfig(
             KafkaConfiguration.builder().bootstrapServer(kafkaContainer.getBootstrapServers())
                 .topicPrefix("thirdyearproject").topicStrategy(
@@ -123,13 +102,43 @@ public class BigTest {
                 .port(postgresContainer.getFirstMappedPort()).host(postgresContainer.getHost())
                 .user(postgresContainer.getUsername())
                 .password(postgresContainer.getPassword()).build()).capturedTables(Set.of(
-            TableIdentifier.of("public", "newtable1"))).build())
+            TableIdentifier.of("public", "newtable2"))).build())
         .build();
 
     assertEquals(PipelineStatus.NOT_RUNNING, pipelineController.getPipelineStatus().getStatus());
+
     pipelineController.runPipeline(config);
+
     await().atMost(ofSeconds(2)).untilAsserted(() -> assertEquals(PipelineStatus.SNAPSHOTTING,
         pipelineController.getPipelineStatus().getStatus()));
-    Thread.sleep(5000);
+
+    await().atMost(ofSeconds(2)).untilAsserted(() -> assertEquals(PipelineStatus.STREAMING,
+        pipelineController.getPipelineStatus().getStatus()));
+
+    assertEquals(List.of(100L, 200L, 300L, 400L), getIdsFromKafka());
+  }
+
+  private List<Long> getIdsFromKafka() {
+    var ids = new ArrayList<Long>();
+    Properties props = new Properties();
+    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaContainer.getBootstrapServers());
+    props.put(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, "test-group" + UUID.randomUUID());
+    props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-group");
+    props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+        ChangeEventDeserializer.class.getName());
+    var i = 0;
+    try (Consumer<String, ChangeEvent> consumer = new KafkaConsumer<>(props)) {
+      consumer.subscribe(List.of("thirdyearproject.all_tables"));
+      ConsumerRecords<String, ChangeEvent> records = consumer.poll(Duration.ofMillis(1000));
+      for (ConsumerRecord<String, ChangeEvent> record : records) {
+        var after = record.value().getAfter();
+        if (after != null) {
+          ids.add((Long) after.get(0).getValue());
+        }
+      }
+    }
+    return ids;
   }
 }
