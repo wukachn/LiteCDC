@@ -1,11 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication;
 
-import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
-import com.thirdyearproject.changedatacaptureapplication.engine.kafka.KafkaProducerService;
-import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.annotation.EnableKafka;
 
 @SpringBootApplication

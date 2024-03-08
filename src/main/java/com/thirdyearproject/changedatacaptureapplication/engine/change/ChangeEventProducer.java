@@ -13,7 +13,11 @@ public class ChangeEventProducer {
   private final MetricsService metricsService;
   private TopicStrategy topicStrategy;
 
-  public ChangeEventProducer(MetricsService metricsService, String bootstrapAddress, String topicPrefix, TopicStrategy topicStrategy) {
+  public ChangeEventProducer(
+      MetricsService metricsService,
+      String bootstrapAddress,
+      String topicPrefix,
+      TopicStrategy topicStrategy) {
     this.kafkaProducerService = new KafkaProducerService(bootstrapAddress, topicPrefix);
     this.metricsService = metricsService;
     this.topicStrategy = topicStrategy;

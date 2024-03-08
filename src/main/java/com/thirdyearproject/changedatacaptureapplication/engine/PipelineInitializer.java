@@ -1,7 +1,6 @@
 package com.thirdyearproject.changedatacaptureapplication.engine;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineConflictException;
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;

@@ -6,22 +6,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.thirdyearproject.changedatacaptureapplication.ChangeDataCaptureApplication;
 import com.thirdyearproject.changedatacaptureapplication.api.PipelineController;
-import com.thirdyearproject.changedatacaptureapplication.api.model.request.KafkaConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.api.model.request.TopicStrategy;
-import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySQLSinkType;
-import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySqlConnectionConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySqlDestinationConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.postgres.PostgresConnectionConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.postgres.PostgresSourceConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.PipelineStatus;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -39,26 +30,22 @@ import org.testcontainers.utility.DockerImageName;
 @SpringBootTest(classes = ChangeDataCaptureApplication.class)
 @RunWith(SpringRunner.class)
 @Slf4j
-public class SinkTest {
-
-  static KafkaContainer kafkaContainer;
-
-  private static DockerImageName myImage =
-      DockerImageName.parse("debezium/postgres:16-alpine").asCompatibleSubstituteFor("postgres");
-
-  @ClassRule
-  public static final PostgreSQLContainer<?> postgresContainer =
-      new PostgreSQLContainer<>(myImage)
-          .withDatabaseName("db")
-          .withUsername("user")
-          .withPassword("pass");
+public abstract class EndToEndIT {
 
   @ClassRule
   public static final MySQLContainer<?> mysqlContainer =
       new MySQLContainer<>("mysql:latest")
           .withUsername("mysql_user")
           .withPassword("mysql_password");
-
+  static KafkaContainer kafkaContainer;
+  private static DockerImageName myImage =
+      DockerImageName.parse("debezium/postgres:16-alpine").asCompatibleSubstituteFor("postgres");
+  @ClassRule
+  public static final PostgreSQLContainer<?> postgresContainer =
+      new PostgreSQLContainer<>(myImage)
+          .withDatabaseName("db")
+          .withUsername("user")
+          .withPassword("pass");
   @Autowired private PipelineController pipelineController;
 
   @BeforeClass
@@ -101,62 +88,13 @@ public class SinkTest {
     kafkaContainer.stop();
   }
 
+  protected abstract PipelineConfiguration getPipelineConfig();
+
   @Test
-  public void test() throws InterruptedException {
-    var config =
-        PipelineConfiguration.builder()
-            .kafkaConfig(
-                KafkaConfiguration.builder()
-                    .bootstrapServer(kafkaContainer.getBootstrapServers())
-                    .topicPrefix("thirdyearproject")
-                    .topicStrategy(TopicStrategy.SINGLE)
-                    .build())
-            .sourceConfig(
-                PostgresSourceConfiguration.builder()
-                    .connectionConfig(
-                        PostgresConnectionConfiguration.builder()
-                            .database(postgresContainer.getDatabaseName())
-                            .port(postgresContainer.getFirstMappedPort())
-                            .host(postgresContainer.getHost())
-                            .user(postgresContainer.getUsername())
-                            .password(postgresContainer.getPassword())
-                            .build())
-                    .capturedTables(Set.of(TableIdentifier.of("public", "newtable2")))
-                    .build())
-            .destinationConfig(
-                MySqlDestinationConfiguration.builder()
-                    .connectionConfig(
-                        MySqlConnectionConfiguration.builder()
-                            .host(mysqlContainer.getHost())
-                            .port(mysqlContainer.getFirstMappedPort())
-                            .user(mysqlContainer.getUsername())
-                            .password(mysqlContainer.getPassword())
-                            .build())
-                    .sinkType(MySQLSinkType.TRANSACTIONAL)
-                    .build())
-            .build();
+  public void endToEnd() {
+    var config = getPipelineConfig();
 
     assertEquals(PipelineStatus.NOT_RUNNING, pipelineController.getPipelineStatus().getStatus());
-
-    pipelineController.runPipeline(config);
-
-    await()
-        .atMost(ofSeconds(2))
-        .untilAsserted(
-            () ->
-                assertEquals(
-                    PipelineStatus.SNAPSHOTTING,
-                    pipelineController.getPipelineStatus().getStatus()));
-
-    await()
-        .atMost(ofSeconds(2))
-        .untilAsserted(
-            () ->
-                assertEquals(
-                    PipelineStatus.STREAMING, pipelineController.getPipelineStatus().getStatus()));
-
-    // Changes replicated to MySQL for snapshot events.
-    await().atMost(ofSeconds(10)).untilAsserted(() -> assertTrue(areContentsEqual()));
 
     try (var conn1 =
             DriverManager.getConnection(
@@ -167,28 +105,79 @@ public class SinkTest {
             DriverManager.getConnection(
                 postgresContainer.getJdbcUrl(),
                 postgresContainer.getUsername(),
+                postgresContainer.getPassword());
+        var conn3 =
+            DriverManager.getConnection(
+                postgresContainer.getJdbcUrl(),
+                postgresContainer.getUsername(),
                 postgresContainer.getPassword())) {
       conn1.setAutoCommit(false);
       conn2.setAutoCommit(false);
-      try (var statement1 = conn1.createStatement();
-          var statement2 = conn2.createStatement()) {
+      conn3.setAutoCommit(false);
+
+      try (var statement1 = conn1.createStatement()) {
         statement1.execute(
             "INSERT INTO public.newtable2 (position, name) VALUES (500, 'five hundo')");
-        statement2.execute(
-            "INSERT INTO public.newtable2 (position, name) VALUES (600, 'six hundo')");
+        pipelineController.runPipeline(config);
         conn1.commit();
-        conn2.commit();
-      }
 
+        await()
+            .atMost(ofSeconds(2))
+            .untilAsserted(
+                () ->
+                    assertEquals(
+                        PipelineStatus.SNAPSHOTTING,
+                        pipelineController.getPipelineStatus().getStatus()));
+
+        await()
+            .atMost(ofSeconds(2))
+            .untilAsserted(
+                () ->
+                    assertEquals(
+                        PipelineStatus.STREAMING,
+                        pipelineController.getPipelineStatus().getStatus()));
+
+        // Changes replicated to MySQL for snapshot events.
+        await().atMost(ofSeconds(10)).untilAsserted(() -> assertTrue(areContentsEqual()));
+        try (var statement2 = conn2.createStatement();
+            var statement3 = conn3.createStatement()) {
+          statement2.execute(
+              "INSERT INTO public.newtable2 (position, name) VALUES (600, 'six hundo')");
+          statement3.execute(
+              "INSERT INTO public.newtable2 (position, name) VALUES (700, 'seven hundo')");
+          statement1.execute(
+              "UPDATE public.newtable2 SET \"name\"='updated1' WHERE \"position\"=100");
+          conn1.commit();
+          statement2.execute(
+              "UPDATE public.newtable2 SET \"name\"='updated2' WHERE \"position\"=100");
+          conn2.commit();
+          statement1.execute(
+              "UPDATE public.newtable2 SET \"name\"='updated1again' WHERE \"position\"=100");
+          conn1.commit();
+          statement1.execute(
+              "INSERT INTO public.newtable2 (position, name) VALUES (800, 'eight hundo')");
+          statement3.execute("DELETE FROM public.newtable2 WHERE \"position\"=100");
+          conn3.commit();
+          statement1.execute("UPDATE public.newtable2 SET \"name\"='up3' WHERE \"position\"=100");
+          conn1.commit();
+          statement3.execute(
+              "INSERT INTO public.newtable2 (position, name) VALUES (900, 'nine hundo')");
+          statement3.execute("DELETE FROM public.newtable2 WHERE \"position\"=200");
+          conn3.commit();
+          statement1.execute(
+              "UPDATE public.newtable2 SET \"name\"='updated200' WHERE \"position\"=200 OR \"position\"=300");
+          conn1.commit();
+        }
+      }
     } catch (SQLException e) {
       log.error("Failed.", e);
       fail();
     }
-
     await().atMost(ofSeconds(10)).untilAsserted(() -> assertTrue(areContentsEqual()));
   }
 
   private boolean areContentsEqual() {
+    log.info("Are contents equal.");
     try (var mysqlConnection =
             DriverManager.getConnection(
                 mysqlContainer.getJdbcUrl(),
@@ -201,14 +190,20 @@ public class SinkTest {
                 postgresContainer.getUsername(),
                 postgresContainer.getPassword());
         var postgresStatement = postgresConnection.createStatement()) {
-      var mysqlResultSet = mysqlStatement.executeQuery("SELECT * FROM cdc_public.newtable2");
-      var postgresResultSet = postgresStatement.executeQuery("SELECT * FROM public.newtable2");
+      var mysqlResultSet =
+          mysqlStatement.executeQuery("SELECT * FROM cdc_public.newtable2 ORDER BY \"position\"");
+      var postgresResultSet =
+          postgresStatement.executeQuery("SELECT * FROM public.newtable2 ORDER BY \"position\"");
       while (true) {
         postgresResultSet.next();
         mysqlResultSet.next();
         if (mysqlResultSet.isAfterLast() || postgresResultSet.isAfterLast()) {
           break;
         }
+        log.info("------");
+        log.info(
+            postgresResultSet.getInt("position") + " ---- " + mysqlResultSet.getInt("position"));
+        log.info(postgresResultSet.getString("name") + " ---- " + mysqlResultSet.getString("name"));
         if (postgresResultSet.getInt("position") != mysqlResultSet.getInt("position")
             || !postgresResultSet.getString("name").equals(mysqlResultSet.getString("name"))) {
           return false;
