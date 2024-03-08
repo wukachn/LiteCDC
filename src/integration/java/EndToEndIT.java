@@ -37,15 +37,18 @@ public abstract class EndToEndIT {
       new MySQLContainer<>("mysql:latest")
           .withUsername("mysql_user")
           .withPassword("mysql_password");
+
   static KafkaContainer kafkaContainer;
   private static DockerImageName myImage =
       DockerImageName.parse("debezium/postgres:16-alpine").asCompatibleSubstituteFor("postgres");
+
   @ClassRule
   public static final PostgreSQLContainer<?> postgresContainer =
       new PostgreSQLContainer<>(myImage)
           .withDatabaseName("db")
           .withUsername("user")
           .withPassword("pass");
+
   @Autowired private PipelineController pipelineController;
 
   @BeforeClass
@@ -54,7 +57,10 @@ public abstract class EndToEndIT {
     kafkaContainer.start();
 
     try (var statement =
-        DriverManager.getConnection(postgresContainer.getJdbcUrl(), "user", "pass")
+        DriverManager.getConnection(
+                postgresContainer.getJdbcUrl(),
+                postgresContainer.getUsername(),
+                postgresContainer.getPassword())
             .createStatement()) {
       String sqlFilePath = "db_setup/setup_postgres.sql";
       String sqlString = new String(Files.readAllBytes(Paths.get(sqlFilePath)));

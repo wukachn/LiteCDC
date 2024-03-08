@@ -5,14 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.thirdyearproject.changedatacaptureapplication.ChangeDataCaptureApplication;
 import com.thirdyearproject.changedatacaptureapplication.api.PipelineController;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.postgres.PostgresConnectionConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.kafka.serialization.ChangeEventDeserializer;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.PipelineStatus;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -62,18 +61,12 @@ public abstract class NoDestinationIT {
     kafkaContainer = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:latest"));
     kafkaContainer.start();
 
-    // Get connection to the PostgreSQL container
-    var connection =
-        new JdbcConnection(
-            PostgresConnectionConfiguration.builder()
-                .database(postgresContainer.getDatabaseName())
-                .port(postgresContainer.getFirstMappedPort())
-                .host(postgresContainer.getHost())
-                .user(postgresContainer.getUsername())
-                .password(postgresContainer.getPassword())
-                .build());
-
-    try (var statement = connection.getConnection().createStatement()) {
+    try (var statement =
+        DriverManager.getConnection(
+                postgresContainer.getJdbcUrl(),
+                postgresContainer.getUsername(),
+                postgresContainer.getPassword())
+            .createStatement()) {
       String sqlFilePath = "db_setup/setup_postgres.sql";
       String sqlString = new String(Files.readAllBytes(Paths.get(sqlFilePath)));
       statement.execute(sqlString);
