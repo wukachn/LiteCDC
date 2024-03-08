@@ -1,2 +1,1 @@
-CREATE DATABASE IF NOT EXISTS cdc_public;
 GRANT ALL PRIVILEGES ON *.* TO 'mysql_user'@'%'
