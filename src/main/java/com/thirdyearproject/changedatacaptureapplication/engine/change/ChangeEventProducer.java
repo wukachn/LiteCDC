@@ -14,18 +14,18 @@ public class ChangeEventProducer {
   private TopicStrategy topicStrategy;
 
   public ChangeEventProducer(
-      KafkaProducerService kafkaProducerService, MetricsService metricsService) {
-    this.kafkaProducerService = kafkaProducerService;
+      MetricsService metricsService,
+      String bootstrapAddress,
+      String topicPrefix,
+      TopicStrategy topicStrategy) {
+    this.kafkaProducerService = new KafkaProducerService(bootstrapAddress, topicPrefix);
     this.metricsService = metricsService;
+    this.topicStrategy = topicStrategy;
   }
 
   public void sendEvent(ChangeEvent changeEvent) {
     changeEvent.getMetadata().setProducedTime(Instant.now().toEpochMilli());
     metricsService.produceEvent(changeEvent);
     kafkaProducerService.sendEvent(changeEvent, topicStrategy);
-  }
-
-  public void setTopicStrategy(TopicStrategy topicStrategy) {
-    this.topicStrategy = topicStrategy;
   }
 }

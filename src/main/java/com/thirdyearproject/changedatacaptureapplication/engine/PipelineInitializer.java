@@ -1,7 +1,6 @@
 package com.thirdyearproject.changedatacaptureapplication.engine;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
-import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineConflictException;
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
@@ -15,9 +14,8 @@ public class PipelineInitializer {
   private final PipelineFactory pipelineFactory;
   private Thread pipelineThread;
 
-  public PipelineInitializer(
-      ChangeEventProducer changeEventProducer, MetricsService metricsServer) {
-    this.pipelineFactory = new PipelineFactory(changeEventProducer, metricsServer);
+  public PipelineInitializer(MetricsService metricsServer) {
+    this.pipelineFactory = new PipelineFactory(metricsServer);
   }
 
   public synchronized void runPipeline(PipelineConfiguration config) {

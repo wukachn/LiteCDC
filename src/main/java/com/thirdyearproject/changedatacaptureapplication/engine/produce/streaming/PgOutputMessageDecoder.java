@@ -216,7 +216,8 @@ public class PgOutputMessageDecoder {
       if (!values.get(i).equals(NULL_IDENTIFIER)) {
         switch (type) {
           case Types.BOOLEAN -> value = Boolean.valueOf(values.get(i));
-          case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIT -> value = Integer.valueOf(values.get(i));
+          case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIT -> value =
+              Integer.valueOf(values.get(i));
           case Types.BIGINT -> value = Long.valueOf(values.get(i));
           case Types.FLOAT -> value = Float.valueOf(values.get(i));
           case Types.DOUBLE -> value = Double.valueOf(values.get(i));
@@ -234,7 +235,8 @@ public class PgOutputMessageDecoder {
 
     short numColumns = buffer.getShort();
     for (int i = 0; i < numColumns; i++) {
-      // Identifies the data as NULL value ('n') or unchanged TOASTed value ('u') or text formatted value ('t').
+      // Identifies the data as NULL value ('n') or unchanged TOASTed value ('u') or text formatted
+      // value ('t').
       char statusValue = (char) buffer.get();
 
       // Add text formatted value to values list.

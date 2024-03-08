@@ -52,7 +52,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./testing/setup_postgres.sql:/docker-entrypoint-initdb.d/setup_postgres.sql
+      - ./db_setup/setup_postgres.sql:/docker-entrypoint-initdb.d/setup_postgres.sql
     profiles:
       - local-postgres
     command:
@@ -73,6 +73,6 @@ services:
         MYSQL_USER: mysql_user
         MYSQL_PASSWORD: mysql_password
     volumes:
-        - ./testing/setup_mysql.sql:/docker-entrypoint-initdb.d/setup_mysql.sql
+        - ./db_setup/setup_mysql.sql:/docker-entrypoint-initdb.d/setup_mysql.sql
     profiles:
       - local-mysql

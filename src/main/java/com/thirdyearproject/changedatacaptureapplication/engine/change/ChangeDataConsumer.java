@@ -45,8 +45,7 @@ public class ChangeDataConsumer implements Runnable {
     this.metricsService = metricsService;
   }
 
-  private KafkaConsumer<String, ChangeEvent> createConsumer(
-      String bootstrapServer) {
+  private KafkaConsumer<String, ChangeEvent> createConsumer(String bootstrapServer) {
     Properties properties = new Properties();
     properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
     String groupInstanceId;
