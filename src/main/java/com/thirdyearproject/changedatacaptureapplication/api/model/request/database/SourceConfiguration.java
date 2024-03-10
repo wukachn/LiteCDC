@@ -20,4 +20,6 @@ public interface SourceConfiguration {
       ChangeEventProducer changeEventProducer, MetricsService metricsService);
 
   Streamer getStreamer(ChangeEventProducer changeEventProducer, MetricsService metricsService);
+
+  void validatePassword();
 }
