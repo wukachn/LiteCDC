@@ -13,7 +13,7 @@ public class MySqlBatchingConnection extends JdbcConnection {
   @Override
   public Connection getConnection() throws SQLException {
     if (super.connection == null || super.connection.isClosed()) {
-      var properties = connectionConfig.getBasicJdbcProperties();
+      var properties = connectionConfig.getJdbcProperties();
       // Can't universally use this property across connections as it causes syntax errors when
       // using batch requests with regular jdbc Statements.
       properties.setProperty("rewriteBatchedStatements", "true");

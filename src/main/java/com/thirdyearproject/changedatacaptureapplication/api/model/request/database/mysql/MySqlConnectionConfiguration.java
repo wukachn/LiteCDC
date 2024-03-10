@@ -25,7 +25,7 @@ public class MySqlConnectionConfiguration implements ConnectionConfiguration {
   }
 
   @Override
-  public Properties getBasicJdbcProperties() {
+  public Properties getJdbcProperties() {
     var properties = new Properties();
     properties.setProperty("user", user);
     properties.setProperty("password", password);

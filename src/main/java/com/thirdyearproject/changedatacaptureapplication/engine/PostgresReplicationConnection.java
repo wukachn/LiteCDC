@@ -13,7 +13,7 @@ public class PostgresReplicationConnection extends JdbcConnection {
   @Override
   public Connection getConnection() throws SQLException {
     if (super.connection == null || super.connection.isClosed()) {
-      var properties = connectionConfig.getBasicJdbcProperties();
+      var properties = connectionConfig.getJdbcProperties();
       properties.setProperty("replication", "database");
       properties.setProperty("preferQueryMode", "simple");
       super.connection = DriverManager.getConnection(connectionConfig.getJdbcUrl(), properties);

@@ -5,5 +5,5 @@ import java.util.Properties;
 public interface ConnectionConfiguration {
   String getJdbcUrl();
 
-  Properties getBasicJdbcProperties();
+  Properties getJdbcProperties();
 }
