@@ -29,7 +29,7 @@ public class JdbcConnection implements Closeable {
     if (this.connection == null || this.connection.isClosed()) {
       this.connection =
           DriverManager.getConnection(
-              connectionConfig.getJdbcUrl(), connectionConfig.getBasicJdbcProperties());
+              connectionConfig.getJdbcUrl(), connectionConfig.getJdbcProperties());
     }
     return this.connection;
   }
