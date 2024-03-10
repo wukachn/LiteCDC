@@ -2,12 +2,14 @@ package com.thirdyearproject.changedatacaptureapplication.api.model.request.data
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.ConnectionConfiguration;
+import java.util.Map;
 import java.util.Properties;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
 
 @Slf4j
 @Value
@@ -19,6 +21,7 @@ public class PostgresConnectionConfiguration implements ConnectionConfiguration 
   @NonNull String database;
   @NonNull String user;
   @NonNull String password;
+  @Nullable Map<String, String> jdbcProperties;
 
   @Override
   @JsonIgnore
@@ -34,6 +37,12 @@ public class PostgresConnectionConfiguration implements ConnectionConfiguration 
     properties.setProperty("password", password);
     // Exported snapshots Minimum Version: Postgres 9.4+
     properties.setProperty("assumeMinServerVersion", "9.4");
+
+    // User defined jdbc properties can override any set by the application. The user should know
+    // the risks.
+    if (jdbcProperties != null) {
+      jdbcProperties.forEach(properties::setProperty);
+    }
     return properties;
   }
 }
