@@ -33,16 +33,13 @@ public class PostgresConnectionConfiguration implements ConnectionConfiguration 
   @JsonIgnore
   public Properties getJdbcProperties() {
     var properties = new Properties();
+    if (jdbcProperties != null) {
+      jdbcProperties.forEach(properties::setProperty);
+    }
     properties.setProperty("user", user);
     properties.setProperty("password", password);
     // Exported snapshots Minimum Version: Postgres 9.4+
     properties.setProperty("assumeMinServerVersion", "9.4");
-
-    // User defined jdbc properties can override any set by the application. The user should know
-    // the risks.
-    if (jdbcProperties != null) {
-      jdbcProperties.forEach(properties::setProperty);
-    }
     return properties;
   }
 }

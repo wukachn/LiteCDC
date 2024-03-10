@@ -29,16 +29,13 @@ public class MySqlConnectionConfiguration implements ConnectionConfiguration {
   @Override
   public Properties getJdbcProperties() {
     var properties = new Properties();
+    if (jdbcProperties != null) {
+      jdbcProperties.forEach(properties::setProperty);
+    }
     properties.setProperty("user", user);
     properties.setProperty("password", password);
     // Create tables using a multi query.
     properties.setProperty("allowMultiQueries", "true");
-
-    // User defined jdbc properties can override any set by the application. The user should know
-    // the risks.
-    if (jdbcProperties != null) {
-      jdbcProperties.forEach(properties::setProperty);
-    }
     return properties;
   }
 }
