@@ -10,4 +10,6 @@ import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicat
     value = {@JsonSubTypes.Type(value = MySqlDestinationConfiguration.class, name = "mysql")})
 public interface DestinationConfiguration {
   ChangeEventSink createChangeEventSink();
+
+  void validatePassword();
 }

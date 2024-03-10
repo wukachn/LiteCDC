@@ -1,6 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.ConnectionConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.util.EnvironmentVariableHandler;
 import java.util.Map;
 import java.util.Properties;
 import lombok.Builder;
@@ -33,7 +34,7 @@ public class MySqlConnectionConfiguration implements ConnectionConfiguration {
       jdbcProperties.forEach(properties::setProperty);
     }
     properties.setProperty("user", user);
-    properties.setProperty("password", password);
+    properties.setProperty("password", EnvironmentVariableHandler.get(password));
     // Create tables using a multi query.
     properties.setProperty("allowMultiQueries", "true");
     return properties;

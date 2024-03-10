@@ -1,0 +1,22 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="NoDestinationSingleTest" type="JUnit" factoryName="JUnit" nameIsGenerated="true">
+    <module name="change-data-capture-app" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="com.thirdyearproject.changedatacaptureapplication.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <option name="PACKAGE_NAME" value="com.thirdyearproject.changedatacaptureapplication" />
+    <option name="MAIN_CLASS_NAME" value="com.thirdyearproject.changedatacaptureapplication.NoDestinationSingleTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <envs>
+      <env name="PG_PASS" value="pg_password" />
+      <env name="MYSQL_PASS" value="mysql_password" />
+    </envs>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

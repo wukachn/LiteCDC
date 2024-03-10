@@ -47,7 +47,7 @@ public class Pipeline implements Closeable, Runnable {
       metricsService.setPipelineStatus(PipelineStatus.STREAMING);
       streamer.stream();
     } catch (Exception e) {
-      log.error("Pipeline had stopped unexpectedly.", e);
+      log.error("Pipeline has stopped.", e);
       close();
     } finally {
       metricsService.setPipelineStatus(PipelineStatus.NOT_RUNNING);

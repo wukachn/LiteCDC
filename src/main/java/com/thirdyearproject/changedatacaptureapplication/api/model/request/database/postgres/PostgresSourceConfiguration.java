@@ -8,6 +8,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot.Snapshotter;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.PostgresStreamer;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.Streamer;
+import com.thirdyearproject.changedatacaptureapplication.util.EnvironmentVariableHandler;
 import java.util.Set;
 import lombok.Builder;
 import lombok.NonNull;
@@ -65,5 +66,10 @@ public class PostgresSourceConfiguration implements SourceConfiguration {
         metricsService,
         getPublication(),
         getReplicationSlot());
+  }
+
+  @Override
+  public void validatePassword() {
+    EnvironmentVariableHandler.get(connectionConfig.getPassword());
   }
 }

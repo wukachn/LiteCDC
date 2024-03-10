@@ -4,6 +4,7 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.request.datab
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventSink;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.MySqlBatchingSink;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.MySqlTransactionalSink;
+import com.thirdyearproject.changedatacaptureapplication.util.EnvironmentVariableHandler;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -25,5 +26,10 @@ public class MySqlDestinationConfiguration implements DestinationConfiguration {
     } else {
       return new MySqlBatchingSink(connectionConfig);
     }
+  }
+
+  @Override
+  public void validatePassword() {
+    EnvironmentVariableHandler.get(connectionConfig.getPassword());
   }
 }

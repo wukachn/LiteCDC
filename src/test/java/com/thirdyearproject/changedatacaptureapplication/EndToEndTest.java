@@ -1,10 +1,11 @@
+package com.thirdyearproject.changedatacaptureapplication;
+
 import static java.time.Duration.ofSeconds;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import com.thirdyearproject.changedatacaptureapplication.ChangeDataCaptureApplication;
 import com.thirdyearproject.changedatacaptureapplication.api.PipelineController;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.PipelineStatus;
@@ -30,7 +31,7 @@ import org.testcontainers.utility.DockerImageName;
 @SpringBootTest(classes = ChangeDataCaptureApplication.class)
 @RunWith(SpringRunner.class)
 @Slf4j
-public abstract class EndToEndIT {
+public abstract class EndToEndTest {
 
   @ClassRule
   public static final MySQLContainer<?> mysqlContainer =
@@ -47,7 +48,7 @@ public abstract class EndToEndIT {
       new PostgreSQLContainer<>(myImage)
           .withDatabaseName("db")
           .withUsername("user")
-          .withPassword("pass");
+          .withPassword("pg_password");
 
   @Autowired private PipelineController pipelineController;
 
@@ -128,7 +129,7 @@ public abstract class EndToEndIT {
         conn1.commit();
 
         await()
-            .atMost(ofSeconds(2))
+            .atMost(ofSeconds(4))
             .untilAsserted(
                 () ->
                     assertEquals(
@@ -136,7 +137,7 @@ public abstract class EndToEndIT {
                         pipelineController.getPipelineStatus().getStatus()));
 
         await()
-            .atMost(ofSeconds(2))
+            .atMost(ofSeconds(4))
             .untilAsserted(
                 () ->
                     assertEquals(

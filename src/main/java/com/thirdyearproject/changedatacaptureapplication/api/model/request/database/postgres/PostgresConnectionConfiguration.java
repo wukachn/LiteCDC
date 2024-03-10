@@ -2,6 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.api.model.request.data
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.ConnectionConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.util.EnvironmentVariableHandler;
 import java.util.Map;
 import java.util.Properties;
 import lombok.Builder;
@@ -37,7 +38,7 @@ public class PostgresConnectionConfiguration implements ConnectionConfiguration 
       jdbcProperties.forEach(properties::setProperty);
     }
     properties.setProperty("user", user);
-    properties.setProperty("password", password);
+    properties.setProperty("password", EnvironmentVariableHandler.get(password));
     // Exported snapshots Minimum Version: Postgres 9.4+
     properties.setProperty("assumeMinServerVersion", "9.4");
     return properties;
