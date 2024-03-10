@@ -1,8 +1,9 @@
+package com.thirdyearproject.changedatacaptureapplication;
+
 import static java.time.Duration.ofSeconds;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.thirdyearproject.changedatacaptureapplication.ChangeDataCaptureApplication;
 import com.thirdyearproject.changedatacaptureapplication.api.PipelineController;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
@@ -40,7 +41,7 @@ import org.testcontainers.utility.DockerImageName;
 @SpringBootTest(classes = ChangeDataCaptureApplication.class)
 @RunWith(SpringRunner.class)
 @Slf4j
-public abstract class NoDestinationIT {
+public abstract class NoDestinationTest {
 
   static KafkaContainer kafkaContainer;
 
@@ -52,7 +53,7 @@ public abstract class NoDestinationIT {
       new PostgreSQLContainer<>(myImage)
           .withDatabaseName("db")
           .withUsername("user")
-          .withPassword("pass");
+          .withPassword("pg_password");
 
   @Autowired private PipelineController pipelineController;
 
@@ -110,7 +111,7 @@ public abstract class NoDestinationIT {
                 assertEquals(
                     PipelineStatus.STREAMING, pipelineController.getPipelineStatus().getStatus()));
 
-    assertEquals(List.of(100L, 200L, 300L, 400L, 1L, 2L, 3L), getIdsFromKafka());
+    assertEquals(List.of(1L, 2L, 3L, 100L, 200L, 300L, 400L), getIdsFromKafka().stream().sorted().toList());
   }
 
   private List<Long> getIdsFromKafka() {

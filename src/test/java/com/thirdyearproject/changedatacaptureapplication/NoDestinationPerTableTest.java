@@ -1,3 +1,5 @@
+package com.thirdyearproject.changedatacaptureapplication;
+
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.KafkaConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.TopicStrategy;
@@ -7,7 +9,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Tab
 import java.util.List;
 import java.util.Set;
 
-public class NoDestinationPerTableIT extends NoDestinationIT {
+public class NoDestinationPerTableTest extends NoDestinationTest {
   @Override
   protected PipelineConfiguration getPipelineConfig() {
     return PipelineConfiguration.builder()
@@ -25,7 +27,7 @@ public class NoDestinationPerTableIT extends NoDestinationIT {
                         .port(postgresContainer.getFirstMappedPort())
                         .host(postgresContainer.getHost())
                         .user(postgresContainer.getUsername())
-                        .password(postgresContainer.getPassword())
+                        .password("PG_PASS")
                         .build())
                 .capturedTables(
                     Set.of(

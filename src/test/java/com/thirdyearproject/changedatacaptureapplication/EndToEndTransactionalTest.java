@@ -1,3 +1,5 @@
+package com.thirdyearproject.changedatacaptureapplication;
+
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.KafkaConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.TopicStrategy;
@@ -9,7 +11,7 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.request.datab
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.util.Set;
 
-public class EndToEndTransactionalIT extends EndToEndIT {
+public class EndToEndTransactionalTest extends EndToEndTest {
   @Override
   protected PipelineConfiguration getPipelineConfig() {
     return PipelineConfiguration.builder()
@@ -27,7 +29,7 @@ public class EndToEndTransactionalIT extends EndToEndIT {
                         .port(postgresContainer.getFirstMappedPort())
                         .host(postgresContainer.getHost())
                         .user(postgresContainer.getUsername())
-                        .password(postgresContainer.getPassword())
+                        .password("PG_PASS")
                         .build())
                 .capturedTables(Set.of(TableIdentifier.of("public", "newtable2")))
                 .build())
@@ -38,7 +40,7 @@ public class EndToEndTransactionalIT extends EndToEndIT {
                         .host(mysqlContainer.getHost())
                         .port(mysqlContainer.getFirstMappedPort())
                         .user(mysqlContainer.getUsername())
-                        .password(mysqlContainer.getPassword())
+                        .password("MYSQL_PASS")
                         .build())
                 .sinkType(MySQLSinkType.TRANSACTIONAL)
                 .build())
