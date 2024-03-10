@@ -31,6 +31,7 @@ public class MySqlConnectionConfiguration implements ConnectionConfiguration {
     var properties = new Properties();
     properties.setProperty("user", user);
     properties.setProperty("password", password);
+    // Create tables using a multi query.
     properties.setProperty("allowMultiQueries", "true");
 
     // User defined jdbc properties can override any set by the application. The user should know
