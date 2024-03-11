@@ -29,6 +29,8 @@ public class MetricsService {
   Long dbProducerTimeLagMs;
   Long producerConsumerTimeLagMs;
   long numOfTransactions;
+  long totalConsumed;
+  long totalProduced;
 
   public GetPipelineStatusResponse getPipelineStatus() {
     return GetPipelineStatusResponse.builder().status(pipelineStatus).build();
@@ -54,6 +56,8 @@ public class MetricsService {
         .dbProducerTimeLagMs(dbProducerTimeLagMs)
         .producerConsumerTimeLagMs(producerConsumerTimeLagMs)
         .numOfTransactions(numOfTransactions)
+        .totalProduced(totalProduced)
+        .totalConsumed(totalConsumed)
         .tables(getTableCrudCounts())
         .build();
   }
@@ -84,6 +88,8 @@ public class MetricsService {
     this.dbProducerTimeLagMs = null;
     this.producerConsumerTimeLagMs = null;
     this.numOfTransactions = 0;
+    this.totalProduced = 0;
+    this.totalConsumed = 0;
   }
 
   private boolean isSnapshotComplete() {
@@ -142,11 +148,13 @@ public class MetricsService {
     if (commitTime != null) {
       this.dbProducerTimeLagMs = metadata.getProducedTime() - metadata.getDbCommitTime();
     }
+    this.totalProduced += 1;
   }
 
-  public void consumeEvent(ChangeEvent changeEvent) {
-    var producedTime = changeEvent.getMetadata().getProducedTime();
+  public void consumeEvents(List<ChangeEvent> changeEvents) {
+    var producedTime = changeEvents.get(changeEvents.size() - 1).getMetadata().getProducedTime();
     this.producerConsumerTimeLagMs = Instant.now().toEpochMilli() - producedTime;
+    this.totalConsumed += changeEvents.size();
   }
 
   public void initiateTables(Set<TableIdentifier> tables) {
