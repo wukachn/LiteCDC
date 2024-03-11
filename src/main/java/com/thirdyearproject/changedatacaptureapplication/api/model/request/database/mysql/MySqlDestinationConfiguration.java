@@ -32,6 +32,14 @@ public class MySqlDestinationConfiguration implements DestinationConfiguration {
   @Override
   public void validate() throws SQLException {
     var jdbcConnection = new JdbcConnection(connectionConfig);
+    validateConnection(jdbcConnection);
+    // Ideally would validate permissions. However, mysql causes this to be more effort than its
+    // worth. We cant just try to create a DB and rollback as the operation is non-transactional and
+    // the permission views available are not clear. For the sake of avoiding locking out a user, I
+    // think it's best to avoid this validation rather than over do it.
+  }
+
+  private void validateConnection(JdbcConnection jdbcConnection) throws SQLException {
     try (var conn = jdbcConnection.getConnection()) {}
   }
 }
