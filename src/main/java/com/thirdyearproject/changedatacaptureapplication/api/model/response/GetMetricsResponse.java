@@ -11,5 +11,8 @@ public class GetMetricsResponse {
   long pipelineStartTime;
   Long dbProducerTimeLagMs;
   Long producerConsumerTimeLagMs;
+  long numOfTransactions;
+  long totalProduced;
+  long totalConsumed;
   List<TableCRUD> tables;
 }

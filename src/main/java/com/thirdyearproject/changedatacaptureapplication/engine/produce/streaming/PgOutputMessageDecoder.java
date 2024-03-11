@@ -8,6 +8,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Col
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ColumnWithData;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.PostgresMetadata;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.util.PostgresTypeUtils;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -41,9 +42,12 @@ public class PgOutputMessageDecoder {
   private Long transactionCommitTime;
 
   public PgOutputMessageDecoder(
-      JdbcConnection jdbcConnection, ChangeEventProducer changeEventProducer) {
+      JdbcConnection jdbcConnection,
+      ChangeEventProducer changeEventProducer,
+      MetricsService metricsService) {
     this.jdbcConnection = jdbcConnection;
-    this.transactionProcessor = new PostgresTransactionProcessor(changeEventProducer);
+    this.transactionProcessor =
+        new PostgresTransactionProcessor(changeEventProducer, metricsService);
   }
 
   public void processNotEmptyMessage(ByteBuffer buffer, LogSequenceNumber lsn) throws SQLException {

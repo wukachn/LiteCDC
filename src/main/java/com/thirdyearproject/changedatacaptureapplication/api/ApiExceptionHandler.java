@@ -35,8 +35,7 @@ public class ApiExceptionHandler {
         (ex.getCause() != null)
             ? ex.getCause().getMessage()
             : "No cause provided, please view logs.";
-    var errorMessage =
-        ErrorMessage.builder().message(ex.getMessage() + " " + causeMessage).build();
+    var errorMessage = ErrorMessage.builder().message(ex.getMessage() + " " + causeMessage).build();
     return new ResponseEntity<>(errorMessage, HttpStatus.BAD_REQUEST);
   }
 }

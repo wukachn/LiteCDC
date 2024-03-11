@@ -25,7 +25,7 @@ public class ChangeEventProducer {
 
   public void sendEvent(ChangeEvent changeEvent) {
     changeEvent.getMetadata().setProducedTime(Instant.now().toEpochMilli());
-    metricsService.produceEvent(changeEvent);
     kafkaProducerService.sendEvent(changeEvent, topicStrategy);
+    metricsService.produceEvent(changeEvent);
   }
 }

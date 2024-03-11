@@ -87,8 +87,8 @@ public class ChangeDataConsumer implements Runnable {
                 .map(ConsumerRecord::value)
                 .collect(Collectors.toList());
         if (!changeEvents.isEmpty()) {
-          metricsService.consumeEvent(changeEvents.get(changeEvents.size() - 1));
           eventProcessor.process(changeEvents);
+          metricsService.consumeEvents(changeEvents);
           // consumer.commitAsync(); // TODO: do i need this?
         }
       }

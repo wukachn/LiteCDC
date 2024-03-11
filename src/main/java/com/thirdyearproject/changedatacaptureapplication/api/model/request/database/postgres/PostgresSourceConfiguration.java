@@ -134,7 +134,9 @@ public class PostgresSourceConfiguration implements SourceConfiguration {
             missingPermsTables.add(table.getStringFormat());
           }
         } else {
-          log.warn(String.format("Failed to validate SELECT permissions for table: ", table.getStringFormat()));
+          log.warn(
+              String.format(
+                  "Failed to validate SELECT permissions for table: ", table.getStringFormat()));
         }
       }
     }

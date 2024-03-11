@@ -41,7 +41,7 @@ public class KafkaProducerService {
     future.whenComplete(
         (result, ex) -> {
           if (ex == null) {
-
+            /*
             log.info(
                 "Sent message=["
                     + changeEvent
@@ -50,6 +50,7 @@ public class KafkaProducerService {
                     + "] with topic=["
                     + result.getRecordMetadata().topic()
                     + "]");
+             */
           } else {
             log.error("Unable to send message=[" + changeEvent + "] due to : " + ex.getMessage());
           }
