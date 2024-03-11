@@ -1,77 +1,11 @@
-# Third Year Project: Change Data Capture App
+# Third Year Project: Change Data Capture
 
-Run the App
-1. `mvn clean install`
-2. `docker-compose --profile local-postgres --profile local-mysql up --build` (with test postgres and mysql dbs)
+## Overview
+This repo provides a simple application to push change events from a postgres source database to kafka for consumption. Additionally, an optional mysql sink is provided, allowing a user to consume their change data to replicate their source in a mysql instance.
 
-Lucid Chart: https://lucid.app/lucidchart/b21cdc93-e535-4cff-abe6-6bfbcc1910bc/edit?invitationId=inv_6d264c25-5c45-4cff-81c6-cb8350444901
+## Getting Started
+I have provided an example docker-compose file to spin up the necessary components, this is for local testing and should not be used for real applications.
 
-Reformat Directory (Windows): CTRL + ALT + L
+To get started, import the example postman API collection to view some example requests to start your pipeline.
 
-## Week 2
-
- - Set up basic skeleton of project
-   - Created Repository
-   - New Maven Project
-   - Basic Spring App - With Basic API Request
-   - Initial Code Flow of Pipeline Creation
- - Created Test RDS Postgres Database
-
-
-## Week 3/4
-
-Set up initial snapshot environment
-
-`ALTER SYSTEM SET wal_level = logical;`
-rds.logical_replication=1
-
-Starting to work on setting up the initial snapshot environment. We need to snapshot a consistent view of the database.
-
-`CREATE_REPLICATION_SLOT \"slot_name\" LOGICAL pgoutput;` creates a snapshot of the database internally, and returns the consistent_point in which we are going to snapshot then stream from.
-Be aware that snapshots are still tied to the life cycle of their associated transaction, and giving them IDs doesn't change anything. 
-Once the exporting transaction commits or rolls back, new transactions trying to access an exported snapshot will see:
-db=> set transaction snapshot '000ED905-1';
-ERROR:  invalid snapshot identifier: "000ED905-1"
-(https://www.willglynn.com/2013/10/25/postgresql-snapshot-export/)
-(https://www.postgresql.org/docs/9.3/functions-admin.html#:~:text=9.26.5.-,Snapshot%20Synchronization%20Functions,-PostgreSQL%20allows%20database)
-
-`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;` only sees data committed before the transaction began; 
-It never sees either uncommitted data or changes committed by concurrent transactions during the transaction's execution.
-
-Started to experiment with kafka. This lead me to start using a `docker-compose.yml` file to spin up the full app stack.
-(https://howtodoinjava.com/kafka/kafka-cluster-setup-using-docker-compose/)
-
-I had to start to use a local instance of postgres, I ran out of the AWS free tier.
-
-Started to capture the data in the snapshot. Currently, a Struct is built which allows us to track each column name, type and value. 
-The next steps are to build more of the actual change object with some added metadata, and send it off to kafka. 
-
-## Week 5/Reading Week
-
-Created simple kafka application. Can now push and pull change data from kafka. This caused more issues than expected, I had a lot of issues with serialization/deserialization. 
-I was concerned about performance, so I was hesitant to go the json route. I finally got everything working using avro, which should be more performant anyway.
-
-## Week 6 - Week 9
-
-Mainly trying to figure out how I want to handle streaming change events. I had a few issues with schema changes when using schema registry and avro but
-by setting `SCHEMA_REGISTRY_SCHEMA_COMPATIBILITY_LEVEL: "none"` I was able to get around them, for this application, I don't want schema restrictions.
-Took me a while to find this documentation page outlining the structure of the ByteBuffer for each message (https://www.postgresql.org/docs/current/protocol-logicalrep-message-formats.html),
-but I based my solution off of two different GitHub repos (https://github.com/debezium/debezium) and (https://github.com/davyam/pgEasyReplication/tree/master).
-
----
-
-Decided to switch to using json messages. Avro was causing too many issues and I wasn't happy with my implementation.
-JSON should offer a better understanding when people try the project for the first time, allowing for the actual change data to
-be used in other applications. The addition of the schema registry for avro makes the project harder to quickly pick up. 
-There is much less to set up now.
-
-
-insert into towns (
-code, article, name, department
-)
-select
-left(md5(i::text), 10),
-md5(random()::text),
-md5(random()::text),
-left(md5(random()::text), 4)
-from generate_series(1, 10000000) s(i)
+For a more complete overview of the system, please refer to the project report.
