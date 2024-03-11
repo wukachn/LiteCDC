@@ -9,6 +9,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.produce.streamin
 import java.io.Closeable;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
 
 @Slf4j
 @Builder
@@ -18,6 +19,7 @@ public class Pipeline implements Closeable, Runnable {
   Snapshotter snapshotter;
   Streamer streamer;
   MetricsService metricsService;
+  @Nullable EmailHandler emailHandler;
 
   @Override
   public void close() {
@@ -47,6 +49,9 @@ public class Pipeline implements Closeable, Runnable {
       streamer.stream();
     } catch (Exception e) {
       log.error("Pipeline has stopped unexpectedly.", e);
+      if (emailHandler != null) {
+        emailHandler.sendEmail(e);
+      }
       close();
     } finally {
       metricsService.setPipelineStatus(PipelineStatus.NOT_RUNNING);

@@ -45,6 +45,7 @@ services:
     environment:
       - POSTGRES_PASS=postgres_password
       - MYSQL_PASS=mysql_password
+      #- EMAIL_PASS=<INSERT EMAIL APP PASSWORD HERE>
 
   postgres:
     image: postgres:latest

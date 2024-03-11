@@ -23,6 +23,7 @@ public class PipelineConfiguration {
   @NonNull KafkaConfiguration kafkaConfig;
   @NonNull SourceConfiguration sourceConfig;
   @Nullable DestinationConfiguration destinationConfig;
+  @Nullable EmailConfiguration emailConfig;
 
   public void validate() throws ValidationException {
     log.info("Validating pipeline.");
@@ -36,6 +37,11 @@ public class PipelineConfiguration {
 
         log.info("Validating sink compatibility.");
         validateSinkCompatibility();
+      }
+
+      if (emailConfig != null) {
+        log.info("Validating email configuration.");
+        emailConfig.validate();
       }
     } catch (Exception e) {
       log.info("Pipeline has failed validation.", e);
