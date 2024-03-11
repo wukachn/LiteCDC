@@ -28,7 +28,8 @@ public class PostgresStreamer extends Streamer {
       String replicationSlot) {
     super(new JdbcConnection(connectionConfiguration), metricsService);
     this.replicationConnection = new PostgresReplicationConnection(connectionConfiguration);
-    this.pgOutputMessageDecoder = new PgOutputMessageDecoder(jdbcConnection, changeEventProducer);
+    this.pgOutputMessageDecoder =
+        new PgOutputMessageDecoder(jdbcConnection, changeEventProducer, metricsService);
     this.publication = publication;
     this.replicationSlot = replicationSlot;
   }

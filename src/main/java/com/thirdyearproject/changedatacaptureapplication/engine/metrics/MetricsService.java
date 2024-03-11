@@ -28,6 +28,7 @@ public class MetricsService {
   Instant pipelineStartTime;
   Long dbProducerTimeLagMs;
   Long producerConsumerTimeLagMs;
+  long numOfTransactions;
 
   public GetPipelineStatusResponse getPipelineStatus() {
     return GetPipelineStatusResponse.builder().status(pipelineStatus).build();
@@ -52,6 +53,7 @@ public class MetricsService {
         .pipelineStartTime(pipelineStartTime.toEpochMilli())
         .dbProducerTimeLagMs(dbProducerTimeLagMs)
         .producerConsumerTimeLagMs(producerConsumerTimeLagMs)
+        .numOfTransactions(numOfTransactions)
         .tables(getTableCrudCounts())
         .build();
   }
@@ -81,6 +83,7 @@ public class MetricsService {
     this.crudTracker = new HashMap<>();
     this.dbProducerTimeLagMs = null;
     this.producerConsumerTimeLagMs = null;
+    this.numOfTransactions = 0;
   }
 
   private boolean isSnapshotComplete() {
@@ -151,5 +154,9 @@ public class MetricsService {
       snapshotTracker.put(table, Pair.with(0L, false));
       crudTracker.put(table, CrudCount.builder().build());
     }
+  }
+
+  public void incrementTxs() {
+    this.numOfTransactions += 1;
   }
 }
