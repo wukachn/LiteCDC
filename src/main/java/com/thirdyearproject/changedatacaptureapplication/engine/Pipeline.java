@@ -30,7 +30,6 @@ public class Pipeline implements Closeable, Runnable {
     try {
       metricsService.startingPipeline();
       metricsService.setPipelineStatus(PipelineStatus.STARTING);
-      pipelineConfiguration.validate();
       var tables = pipelineConfiguration.getSourceConfig().getTables();
       if (pipelineConfiguration.getDestinationConfig() != null) {
         var bootstrapServer = pipelineConfiguration.getKafkaConfig().getBootstrapServer();
@@ -47,7 +46,7 @@ public class Pipeline implements Closeable, Runnable {
       metricsService.setPipelineStatus(PipelineStatus.STREAMING);
       streamer.stream();
     } catch (Exception e) {
-      log.error("Pipeline has stopped.", e);
+      log.error("Pipeline has stopped unexpectedly.", e);
       close();
     } finally {
       metricsService.setPipelineStatus(PipelineStatus.NOT_RUNNING);

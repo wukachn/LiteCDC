@@ -1,10 +1,11 @@
 package com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.DestinationConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.engine.JdbcConnection;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventSink;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.MySqlBatchingSink;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.MySqlTransactionalSink;
-import com.thirdyearproject.changedatacaptureapplication.util.EnvironmentVariableHandler;
+import java.sql.SQLException;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -29,7 +30,8 @@ public class MySqlDestinationConfiguration implements DestinationConfiguration {
   }
 
   @Override
-  public void validatePassword() {
-    EnvironmentVariableHandler.get(connectionConfig.getPassword());
+  public void validate() throws SQLException {
+    var jdbcConnection = new JdbcConnection(connectionConfig);
+    try (var conn = jdbcConnection.getConnection()) {}
   }
 }

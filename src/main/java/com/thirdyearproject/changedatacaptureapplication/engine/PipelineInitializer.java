@@ -19,6 +19,8 @@ public class PipelineInitializer {
   }
 
   public synchronized void runPipeline(PipelineConfiguration config) {
+    config.validate();
+
     if (pipelineThread != null && pipelineThread.getState() == Thread.State.TERMINATED) {
       pipelineThread = null;
     }

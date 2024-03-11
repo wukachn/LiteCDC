@@ -111,7 +111,8 @@ public abstract class NoDestinationTest {
                 assertEquals(
                     PipelineStatus.STREAMING, pipelineController.getPipelineStatus().getStatus()));
 
-    assertEquals(List.of(1L, 2L, 3L, 100L, 200L, 300L, 400L), getIdsFromKafka().stream().sorted().toList());
+    assertEquals(
+        List.of(1L, 2L, 3L, 100L, 200L, 300L, 400L), getIdsFromKafka().stream().sorted().toList());
   }
 
   private List<Long> getIdsFromKafka() {
