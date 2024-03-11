@@ -38,7 +38,7 @@ public class PipelineConfiguration {
         validateSinkCompatibility();
       }
     } catch (Exception e) {
-      log.info("Pipeline has failed validation.");
+      log.info("Pipeline has failed validation.", e);
       throw new ValidationException("Pipeline has failed validation.", e);
     }
     log.info("Pipeline has passed initial validation.");
