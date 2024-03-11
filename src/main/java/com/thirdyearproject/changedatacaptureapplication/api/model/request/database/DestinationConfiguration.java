@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySqlDestinationConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventSink;
+import java.sql.SQLException;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes(
@@ -11,5 +12,5 @@ import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicat
 public interface DestinationConfiguration {
   ChangeEventSink createChangeEventSink();
 
-  void validatePassword();
+  void validate() throws SQLException;
 }

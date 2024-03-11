@@ -23,11 +23,13 @@ public class PipelineInitializer {
       pipelineThread = null;
     }
 
-    log.info("Attempting to start pipeline.");
     if (pipelineThread != null) {
       log.error("A pipeline is already running.");
       throw new PipelineConflictException("A pipeline is already running.");
     }
+
+    log.info("Attempting to start pipeline.");
+    config.validate();
     var pipeline = pipelineFactory.create(config);
     pipelineThread = new Thread(pipeline);
     pipelineThread.start();

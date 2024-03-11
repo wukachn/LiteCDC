@@ -8,6 +8,7 @@ import com.thirdyearproject.changedatacaptureapplication.engine.change.model.Tab
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot.Snapshotter;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.Streamer;
+import java.sql.SQLException;
 import java.util.Set;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -21,5 +22,5 @@ public interface SourceConfiguration {
 
   Streamer getStreamer(ChangeEventProducer changeEventProducer, MetricsService metricsService);
 
-  void validatePassword();
+  void validate() throws SQLException;
 }

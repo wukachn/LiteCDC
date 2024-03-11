@@ -2,6 +2,7 @@ package com.thirdyearproject.changedatacaptureapplication.api;
 
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineConflictException;
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,8 +23,20 @@ public class ApiExceptionHandler {
 
   @ResponseStatus(HttpStatus.NOT_FOUND)
   @ExceptionHandler(PipelineNotRunningException.class)
-  public ResponseEntity<ErrorMessage> handleConflict(PipelineNotRunningException ex) {
+  public ResponseEntity<ErrorMessage> handleNotFound(PipelineNotRunningException ex) {
     var errorMessage = ErrorMessage.builder().message(ex.getMessage()).build();
     return new ResponseEntity<>(errorMessage, HttpStatus.NOT_FOUND);
+  }
+
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  @ExceptionHandler(ValidationException.class)
+  public ResponseEntity<ErrorMessage> handleBadRequest(ValidationException ex) {
+    var causeMessage =
+        (ex.getCause() != null)
+            ? ex.getCause().getMessage()
+            : "No cause provided, please view logs.";
+    var errorMessage =
+        ErrorMessage.builder().message(ex.getMessage() + " " + causeMessage).build();
+    return new ResponseEntity<>(errorMessage, HttpStatus.BAD_REQUEST);
   }
 }
