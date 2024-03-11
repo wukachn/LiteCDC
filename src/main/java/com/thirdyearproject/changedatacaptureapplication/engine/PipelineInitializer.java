@@ -19,17 +19,17 @@ public class PipelineInitializer {
   }
 
   public synchronized void runPipeline(PipelineConfiguration config) {
-    config.validate();
-
     if (pipelineThread != null && pipelineThread.getState() == Thread.State.TERMINATED) {
       pipelineThread = null;
     }
 
-    log.info("Attempting to start pipeline.");
     if (pipelineThread != null) {
       log.error("A pipeline is already running.");
       throw new PipelineConflictException("A pipeline is already running.");
     }
+
+    log.info("Attempting to start pipeline.");
+    config.validate();
     var pipeline = pipelineFactory.create(config);
     pipelineThread = new Thread(pipeline);
     pipelineThread.start();

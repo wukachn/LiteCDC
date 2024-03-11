@@ -11,7 +11,9 @@ import com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.PostgresStreamer;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.Streamer;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -76,6 +78,7 @@ public class PostgresSourceConfiguration implements SourceConfiguration {
     validateWalLevel(jdbcConnection);
     validatePublication(jdbcConnection);
     validateReplicationSlot(jdbcConnection);
+    validateSelectPermissions(jdbcConnection);
   }
 
   private void validateWalLevel(JdbcConnection jdbcConnection) throws SQLException {
@@ -114,6 +117,33 @@ public class PostgresSourceConfiguration implements SourceConfiguration {
         throw new SourceValidationException(
             String.format("Replication slot already exists: %s", slot));
       }
+    }
+  }
+
+  private void validateSelectPermissions(JdbcConnection jdbcConnection) throws SQLException {
+    var missingPermsTables = new ArrayList<String>();
+    for (var table : capturedTables) {
+      try (var stmt = jdbcConnection.getConnection().createStatement()) {
+        var rs =
+            stmt.executeQuery(
+                String.format(
+                    "SELECT exists(SELECT * FROM information_schema.table_privileges where table_schema='%s' and table_name='%s' and privilege_type='SELECT')",
+                    table.getSchema(), table.getTable()));
+        if (rs.next()) {
+          if (!rs.getBoolean("exists")) {
+            missingPermsTables.add(table.getStringFormat());
+          }
+        } else {
+          log.warn("Failed to validate SELECT permissions.");
+          break;
+        }
+      }
+    }
+    if (!missingPermsTables.isEmpty()) {
+      throw new SourceValidationException(
+          String.format(
+              "SELECT permissions missing for tables: %s",
+              missingPermsTables.stream().collect(Collectors.joining(", "))));
     }
   }
 }

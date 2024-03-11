@@ -25,16 +25,16 @@ public class PipelineConfiguration {
   @Nullable DestinationConfiguration destinationConfig;
 
   public void validate() throws ValidationException {
-    log.info("Validating Pipeline.");
+    log.info("Validating pipeline.");
     try {
-      log.info("Validating Source.");
+      log.info("Validating source.");
       sourceConfig.validate();
 
       if (destinationConfig != null) {
-        log.info("Validating Destination.");
+        log.info("Validating destination.");
         destinationConfig.validate();
 
-        log.info("Validating Sink Compatibility.");
+        log.info("Validating sink compatibility.");
         validateSinkCompatibility();
       }
     } catch (Exception e) {
