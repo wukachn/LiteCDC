@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.postgres.PostgresSourceConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeEventProducer;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.SourceValidationException;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.snapshot.Snapshotter;
 import com.thirdyearproject.changedatacaptureapplication.engine.produce.streaming.Streamer;
@@ -22,5 +23,5 @@ public interface SourceConfiguration {
 
   Streamer getStreamer(ChangeEventProducer changeEventProducer, MetricsService metricsService);
 
-  void validate() throws SQLException;
+  void validate() throws SQLException, SourceValidationException;
 }

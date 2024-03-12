@@ -3,10 +3,13 @@ package com.thirdyearproject.changedatacaptureapplication;
 import static java.time.Duration.ofSeconds;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import com.thirdyearproject.changedatacaptureapplication.api.PipelineController;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineConflictException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.ValidationException;
 import com.thirdyearproject.changedatacaptureapplication.engine.kafka.serialization.ChangeEventDeserializer;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.PipelineStatus;
 import java.io.IOException;
@@ -95,7 +98,12 @@ public abstract class NoDestinationTest {
 
     assertEquals(PipelineStatus.NOT_RUNNING, pipelineController.getPipelineStatus().getStatus());
 
-    pipelineController.runPipeline(config);
+    try {
+      pipelineController.runPipeline(config);
+    } catch (PipelineConflictException | ValidationException e) {
+      log.error("Pipeline failed to start.", e);
+      fail();
+    }
 
     await()
         .atMost(ofSeconds(2))

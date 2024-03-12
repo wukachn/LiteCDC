@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import com.thirdyearproject.changedatacaptureapplication.api.PipelineController;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineConflictException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.ValidationException;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.PipelineStatus;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -177,7 +179,7 @@ public abstract class EndToEndTest {
           conn1.commit();
         }
       }
-    } catch (SQLException e) {
+    } catch (SQLException | PipelineConflictException | ValidationException e) {
       log.error("Failed.", e);
       fail();
     }

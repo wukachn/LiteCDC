@@ -73,7 +73,7 @@ public class PostgresSourceConfiguration implements SourceConfiguration {
   }
 
   @Override
-  public void validate() throws SQLException {
+  public void validate() throws SQLException, SourceValidationException {
     var jdbcConnection = new JdbcConnection(connectionConfig);
     validateWalLevel(jdbcConnection);
     validatePublication(jdbcConnection);
@@ -81,7 +81,8 @@ public class PostgresSourceConfiguration implements SourceConfiguration {
     validateSelectPermissions(jdbcConnection);
   }
 
-  private void validateWalLevel(JdbcConnection jdbcConnection) throws SQLException {
+  private void validateWalLevel(JdbcConnection jdbcConnection)
+      throws SQLException, SourceValidationException {
     try (var stmt = jdbcConnection.getConnection().createStatement()) {
       var rs = stmt.executeQuery("SHOW wal_level");
       if (rs.next()) {
@@ -94,7 +95,8 @@ public class PostgresSourceConfiguration implements SourceConfiguration {
     }
   }
 
-  private void validatePublication(JdbcConnection jdbcConnection) throws SQLException {
+  private void validatePublication(JdbcConnection jdbcConnection)
+      throws SQLException, SourceValidationException {
     var publication = getPublication();
     try (var stmt = jdbcConnection.getConnection().createStatement()) {
       var rs =
@@ -107,7 +109,8 @@ public class PostgresSourceConfiguration implements SourceConfiguration {
     }
   }
 
-  private void validateReplicationSlot(JdbcConnection jdbcConnection) throws SQLException {
+  private void validateReplicationSlot(JdbcConnection jdbcConnection)
+      throws SQLException, SourceValidationException {
     var slot = getReplicationSlot();
     try (var stmt = jdbcConnection.getConnection().createStatement()) {
       var rs =
@@ -120,7 +123,8 @@ public class PostgresSourceConfiguration implements SourceConfiguration {
     }
   }
 
-  private void validateSelectPermissions(JdbcConnection jdbcConnection) throws SQLException {
+  private void validateSelectPermissions(JdbcConnection jdbcConnection)
+      throws SQLException, SourceValidationException {
     var missingPermsTables = new ArrayList<String>();
     for (var table : capturedTables) {
       try (var stmt = jdbcConnection.getConnection().createStatement()) {

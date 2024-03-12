@@ -22,7 +22,7 @@ public class MetricsServiceTest {
   }
 
   @Test
-  public void metrics_initial() {
+  public void metrics_initial() throws PipelineNotRunningException {
     var beforeEpoch = Instant.now().toEpochMilli();
     var metricsService = new MetricsService();
     var afterEpoch = Instant.now().toEpochMilli();
@@ -58,7 +58,7 @@ public class MetricsServiceTest {
   }
 
   @Test
-  public void snapshot_metrics_initial() {
+  public void snapshot_metrics_initial() throws PipelineNotRunningException {
     var metricsService = new MetricsService();
     metricsService.startingPipeline();
     metricsService.setPipelineStatus(PipelineStatus.SNAPSHOTTING);

@@ -5,7 +5,9 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.request.datab
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySQLSinkType;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySqlDestinationConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineConfigurationException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.SourceValidationException;
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.ValidationException;
+import java.sql.SQLException;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
@@ -43,14 +45,14 @@ public class PipelineConfiguration {
         log.info("Validating email configuration.");
         emailConfig.validate();
       }
-    } catch (Exception e) {
+    } catch (PipelineConfigurationException | SQLException | SourceValidationException e) {
       log.info("Pipeline has failed validation.", e);
       throw new ValidationException("Pipeline has failed validation.", e);
     }
     log.info("Pipeline has passed initial validation.");
   }
 
-  private void validateSinkCompatibility() {
+  private void validateSinkCompatibility() throws PipelineConfigurationException {
     if (destinationConfig instanceof MySqlDestinationConfiguration) {
       var topicStrategy = kafkaConfig.getTopicStrategy();
       var sinkType = ((MySqlDestinationConfiguration) destinationConfig).getSinkType();

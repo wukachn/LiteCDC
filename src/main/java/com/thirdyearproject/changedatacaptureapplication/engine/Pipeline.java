@@ -1,6 +1,7 @@
 package com.thirdyearproject.changedatacaptureapplication.engine;
 
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
 import com.thirdyearproject.changedatacaptureapplication.engine.kafka.KafkaConsumerManager;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.PipelineStatus;
@@ -64,7 +65,12 @@ public class Pipeline implements Closeable, Runnable {
 
   private void handleUnexpectedFailureAndClosePipeline(Exception e) {
     handleUnexpectedFailure(e);
-    PipelineInitializer.haltPipeline();
+    try {
+      PipelineInitializer.haltPipeline();
+    } catch (PipelineNotRunningException haltEx) {
+      // This will never happen.
+      log.error("Pipeline is not running.", haltEx);
+    }
   }
 
   private void handleUnexpectedFailure(Exception e) {

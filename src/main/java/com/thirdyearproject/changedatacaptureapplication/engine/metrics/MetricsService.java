@@ -36,7 +36,7 @@ public class MetricsService {
     return GetPipelineStatusResponse.builder().status(pipelineStatus).build();
   }
 
-  public GetSnapshotMetricsResponse getSnapshotMetrics() {
+  public GetSnapshotMetricsResponse getSnapshotMetrics() throws PipelineNotRunningException {
     if (pipelineStatus == PipelineStatus.NOT_RUNNING) {
       throw new PipelineNotRunningException("Pipeline not running.");
     }
@@ -47,7 +47,7 @@ public class MetricsService {
         .build();
   }
 
-  public GetMetricsResponse getMetrics() {
+  public GetMetricsResponse getMetrics() throws PipelineNotRunningException {
     if (pipelineStatus == PipelineStatus.NOT_RUNNING) {
       throw new PipelineNotRunningException("Pipeline not running.");
     }

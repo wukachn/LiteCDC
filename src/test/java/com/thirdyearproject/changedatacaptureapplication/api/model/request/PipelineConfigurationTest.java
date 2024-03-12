@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.SourceConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySQLSinkType;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.mysql.MySqlDestinationConfiguration;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.SourceValidationException;
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.ValidationException;
 import java.sql.SQLException;
 import java.util.stream.Stream;
@@ -21,7 +22,8 @@ public class PipelineConfigurationTest {
 
   @ParameterizedTest
   @MethodSource("passingTopicStrategyAndSinkType")
-  public void passValidation_compatibility(TopicStrategy topicStrategy, MySQLSinkType mySqlSinkType) throws SQLException {
+  public void passValidation_compatibility(TopicStrategy topicStrategy, MySQLSinkType mySqlSinkType)
+      throws SQLException, SourceValidationException, ValidationException {
     var source = mock(SourceConfiguration.class);
     var destination = mock(MySqlDestinationConfiguration.class);
     var kafka = mock(KafkaConfiguration.class);
@@ -49,7 +51,9 @@ public class PipelineConfigurationTest {
 
   @ParameterizedTest
   @MethodSource("failingTopicStrategyAndSinkType")
-  public void failsValidation_compatibility(TopicStrategy topicStrategy, MySQLSinkType mySqlSinkType) throws SQLException {
+  public void failsValidation_compatibility(
+      TopicStrategy topicStrategy, MySQLSinkType mySqlSinkType)
+      throws SQLException, SourceValidationException {
     var source = mock(SourceConfiguration.class);
     var destination = mock(MySqlDestinationConfiguration.class);
     var kafka = mock(KafkaConfiguration.class);
@@ -68,7 +72,7 @@ public class PipelineConfigurationTest {
             .emailConfig(email)
             .build();
 
-     assertThrows(ValidationException.class, () -> config.validate());
+    assertThrows(ValidationException.class, () -> config.validate());
   }
 
   static Stream<Arguments> passingTopicStrategyAndSinkType() {

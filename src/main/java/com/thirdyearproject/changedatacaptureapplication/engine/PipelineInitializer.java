@@ -3,6 +3,7 @@ package com.thirdyearproject.changedatacaptureapplication.engine;
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.PipelineConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineConflictException;
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.ValidationException;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -11,7 +12,8 @@ public class PipelineInitializer {
   private static Thread pipelineThread;
 
   public static synchronized void runPipeline(
-      PipelineConfiguration config, MetricsService metricsService) {
+      PipelineConfiguration config, MetricsService metricsService)
+      throws PipelineConflictException, ValidationException {
     if (pipelineThread != null && pipelineThread.getState() == Thread.State.TERMINATED) {
       pipelineThread = null;
     }
@@ -29,7 +31,7 @@ public class PipelineInitializer {
     log.info("Pipeline started.");
   }
 
-  public static synchronized void haltPipeline() {
+  public static synchronized void haltPipeline() throws PipelineNotRunningException {
     log.info("Attempting to close pipeline.");
     if (pipelineThread == null || pipelineThread.getState() == Thread.State.TERMINATED) {
       log.error("Pipeline not running.");
