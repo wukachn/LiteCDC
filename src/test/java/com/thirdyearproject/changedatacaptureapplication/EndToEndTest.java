@@ -22,6 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.MySQLContainer;
@@ -30,6 +31,7 @@ import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest(classes = ChangeDataCaptureApplication.class)
 @RunWith(SpringRunner.class)
+@DirtiesContext
 @Slf4j
 public abstract class EndToEndTest {
 
@@ -66,7 +68,6 @@ public abstract class EndToEndTest {
       String sqlFilePath = "db_setup/setup_postgres.sql";
       String sqlString = new String(Files.readAllBytes(Paths.get(sqlFilePath)));
       statement.execute(sqlString);
-      log.info("Created tables");
     } catch (SQLException e) {
       throw new RuntimeException(e);
     } catch (IOException e) {
@@ -98,7 +99,7 @@ public abstract class EndToEndTest {
   protected abstract PipelineConfiguration getPipelineConfig();
 
   @Test
-  public void endToEnd() {
+  public void validateEndToEndPipeline() {
     var config = getPipelineConfig();
 
     assertEquals(PipelineStatus.NOT_RUNNING, pipelineController.getPipelineStatus().getStatus());
