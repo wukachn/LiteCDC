@@ -10,7 +10,9 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.request.datab
 import com.thirdyearproject.changedatacaptureapplication.api.model.request.database.postgres.PostgresSourceConfiguration;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.util.Set;
+import org.springframework.test.annotation.DirtiesContext;
 
+@DirtiesContext
 public class EndToEndTransactionalTest extends EndToEndTest {
   @Override
   protected PipelineConfiguration getPipelineConfig() {

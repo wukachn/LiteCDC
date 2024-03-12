@@ -8,7 +8,9 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.request.datab
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import java.util.List;
 import java.util.Set;
+import org.springframework.test.annotation.DirtiesContext;
 
+@DirtiesContext
 public class NoDestinationSingleTest extends NoDestinationTest {
   @Override
   protected PipelineConfiguration getPipelineConfig() {
