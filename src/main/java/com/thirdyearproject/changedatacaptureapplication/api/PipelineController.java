@@ -5,6 +5,9 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetM
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetPipelineStatusResponse;
 import com.thirdyearproject.changedatacaptureapplication.api.model.response.GetSnapshotMetricsResponse;
 import com.thirdyearproject.changedatacaptureapplication.engine.PipelineInitializer;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineConflictException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.ValidationException;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,12 +29,13 @@ public class PipelineController {
   }
 
   @PostMapping("/run")
-  public void runPipeline(@RequestBody PipelineConfiguration config) {
+  public void runPipeline(@RequestBody PipelineConfiguration config)
+      throws PipelineConflictException, ValidationException {
     PipelineInitializer.runPipeline(config, metricsService);
   }
 
   @PostMapping("/halt")
-  public void haltPipeline() {
+  public void haltPipeline() throws PipelineNotRunningException {
     PipelineInitializer.haltPipeline();
   }
 
@@ -41,12 +45,12 @@ public class PipelineController {
   }
 
   @GetMapping("/metrics/snapshot")
-  public GetSnapshotMetricsResponse getSnapshotMetrics() {
+  public GetSnapshotMetricsResponse getSnapshotMetrics() throws PipelineNotRunningException {
     return metricsService.getSnapshotMetrics();
   }
 
   @GetMapping("/metrics")
-  public GetMetricsResponse getMetrics() {
+  public GetMetricsResponse getMetrics() throws PipelineNotRunningException {
     return metricsService.getMetrics();
   }
 }
