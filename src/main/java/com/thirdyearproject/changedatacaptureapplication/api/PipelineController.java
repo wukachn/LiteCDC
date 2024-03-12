@@ -18,25 +18,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/pipeline")
 public class PipelineController {
-
-  private final PipelineInitializer pipelineInitializer;
   private final MetricsService metricsService;
 
   @Autowired
-  public PipelineController(
-      PipelineInitializer pipelineInitializer, MetricsService metricsService) {
-    this.pipelineInitializer = pipelineInitializer;
+  public PipelineController(MetricsService metricsService) {
     this.metricsService = metricsService;
   }
 
   @PostMapping("/run")
   public void runPipeline(@RequestBody PipelineConfiguration config) {
-    pipelineInitializer.runPipeline(config);
+    PipelineInitializer.runPipeline(config, metricsService);
   }
 
   @PostMapping("/halt")
   public void haltPipeline() {
-    pipelineInitializer.haltPipeline();
+    PipelineInitializer.haltPipeline();
   }
 
   @GetMapping("/status")

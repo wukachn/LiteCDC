@@ -4,6 +4,8 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.request.Topic
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.ChangeEvent;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventSink;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.ConsumerException;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.ConsumerExceptionHandler;
 import com.thirdyearproject.changedatacaptureapplication.engine.kafka.serialization.ChangeEventDeserializer;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import java.time.Duration;
@@ -23,12 +25,15 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 @Slf4j
 public class ChangeDataConsumer implements Runnable {
 
-  private KafkaConsumer<String, ChangeEvent> consumer;
-  private String topicPrefix;
-  private List<TableIdentifier> tables;
-  private ChangeEventSink eventProcessor;
-  private MetricsService metricsService;
-  private TopicStrategy topicStrategy;
+  private final String bootstrapServer;
+  private final String topicPrefix;
+  private final List<TableIdentifier> tables;
+  private final ChangeEventSink eventProcessor;
+  private final MetricsService metricsService;
+  private final TopicStrategy topicStrategy;
+  private final ConsumerExceptionHandler consumerExceptionHandler;
+  // Need a flag, a real interrupt causes issues with interrupting KafkaConsumer.
+  private boolean isSoftInterrupted;
 
   public ChangeDataConsumer(
       String bootstrapServer,
@@ -36,13 +41,20 @@ public class ChangeDataConsumer implements Runnable {
       List<TableIdentifier> tables,
       ChangeEventSink eventProcessor,
       MetricsService metricsService,
-      TopicStrategy topicStrategy) {
+      TopicStrategy topicStrategy,
+      ConsumerExceptionHandler consumerExceptionHandler) {
+    this.bootstrapServer = bootstrapServer;
     this.tables = tables;
     this.topicStrategy = topicStrategy;
-    this.consumer = createConsumer(bootstrapServer);
     this.topicPrefix = topicPrefix;
     this.eventProcessor = eventProcessor;
     this.metricsService = metricsService;
+    this.consumerExceptionHandler = consumerExceptionHandler;
+    this.isSoftInterrupted = false;
+  }
+
+  public void softInterrupt() {
+    this.isSoftInterrupted = true;
   }
 
   private KafkaConsumer<String, ChangeEvent> createConsumer(String bootstrapServer) {
@@ -70,16 +82,16 @@ public class ChangeDataConsumer implements Runnable {
 
   @Override
   public void run() {
-    List<String> topics;
-    if (topicStrategy == TopicStrategy.PER_TABLE) {
-      topics = tables.stream().map(table -> topicPrefix + "." + table.getStringFormat()).toList();
-    } else {
-      topics = List.of(topicPrefix + ".all_tables");
-    }
+    try (var consumer = createConsumer(bootstrapServer)) {
+      List<String> topics;
+      if (topicStrategy == TopicStrategy.PER_TABLE) {
+        topics = tables.stream().map(table -> topicPrefix + "." + table.getStringFormat()).toList();
+      } else {
+        topics = List.of(topicPrefix + ".all_tables");
+      }
 
-    consumer.subscribe(topics);
-    try {
-      while (true) {
+      consumer.subscribe(topics);
+      while (!isSoftInterrupted) {
         ConsumerRecords<String, ChangeEvent> consumerRecords =
             consumer.poll(Duration.of(2000, ChronoUnit.MILLIS));
         List<ChangeEvent> changeEvents =
@@ -93,9 +105,9 @@ public class ChangeDataConsumer implements Runnable {
         }
       }
     } catch (Exception e) {
-      log.error("Consumer Error.", e);
+      consumerExceptionHandler.handle(new ConsumerException("Consumer Error.", e));
     } finally {
-      consumer.close();
+      log.info("Consumer closed.");
     }
   }
 }
