@@ -76,10 +76,12 @@ public class MetricsServiceTest {
             TableRowsSnapshot.builder()
                 .table(TableIdentifier.of("public", "table1"))
                 .rows(0)
+                .completed(false)
                 .build(),
             TableRowsSnapshot.builder()
                 .table(TableIdentifier.of("public", "table2"))
                 .rows(0)
+                .completed(false)
                 .build());
     assertEquals(expectedTables, metrics.getTables());
   }

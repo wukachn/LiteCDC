@@ -37,8 +37,8 @@ public class PostgresDestinationConfigurationTest {
     props.put("user", postgresContainer.getUsername());
     props.put("password", postgresContainer.getPassword());
     props.put("assumeMinServerVersion", "9.4");
-    props.setProperty("replication", "database");
-    props.setProperty("preferQueryMode", "simple");
+    props.put("replication", "database");
+    props.put("preferQueryMode", "simple");
 
     try (var statement =
         DriverManager.getConnection(postgresContainer.getJdbcUrl(), props).createStatement()) {
