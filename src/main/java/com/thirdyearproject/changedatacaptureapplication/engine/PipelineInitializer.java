@@ -5,20 +5,13 @@ import com.thirdyearproject.changedatacaptureapplication.engine.exception.Pipeli
 import com.thirdyearproject.changedatacaptureapplication.engine.exception.PipelineNotRunningException;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
 public class PipelineInitializer {
+  private static Thread pipelineThread;
 
-  private final PipelineFactory pipelineFactory;
-  private Thread pipelineThread;
-
-  public PipelineInitializer(MetricsService metricsServer) {
-    this.pipelineFactory = new PipelineFactory(metricsServer);
-  }
-
-  public synchronized void runPipeline(PipelineConfiguration config) {
+  public static synchronized void runPipeline(
+      PipelineConfiguration config, MetricsService metricsService) {
     if (pipelineThread != null && pipelineThread.getState() == Thread.State.TERMINATED) {
       pipelineThread = null;
     }
@@ -30,14 +23,14 @@ public class PipelineInitializer {
 
     log.info("Attempting to start pipeline.");
     config.validate();
-    var pipeline = pipelineFactory.create(config);
+    var pipeline = new PipelineFactory(metricsService).create(config);
     pipelineThread = new Thread(pipeline);
     pipelineThread.start();
     log.info("Pipeline started.");
   }
 
-  public synchronized void haltPipeline() {
-    log.info("Attempting to halt pipeline.");
+  public static synchronized void haltPipeline() {
+    log.info("Attempting to close pipeline.");
     if (pipelineThread == null || pipelineThread.getState() == Thread.State.TERMINATED) {
       log.error("Pipeline not running.");
       throw new PipelineNotRunningException("Pipeline not running.");
@@ -49,6 +42,5 @@ public class PipelineInitializer {
       throw new RuntimeException(e);
     }
     pipelineThread = null;
-    log.info("Pipeline halted.");
   }
 }

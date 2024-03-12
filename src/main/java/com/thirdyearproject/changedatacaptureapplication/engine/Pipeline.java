@@ -24,7 +24,9 @@ public class Pipeline implements Closeable, Runnable {
   @Override
   public void close() {
     log.info("Closing pipeline.");
+    KafkaConsumerManager.closeConsumers();
     metricsService.clear();
+    log.info("Pipeline closed.");
   }
 
   @Override
@@ -39,7 +41,13 @@ public class Pipeline implements Closeable, Runnable {
         var eventProcessor = pipelineConfiguration.getDestinationConfig().createChangeEventSink();
         var topicStrategy = pipelineConfiguration.getKafkaConfig().getTopicStrategy();
         KafkaConsumerManager.createConsumers(
-            bootstrapServer, topicPrefix, tables, eventProcessor, metricsService, topicStrategy);
+            bootstrapServer,
+            topicPrefix,
+            tables,
+            eventProcessor,
+            metricsService,
+            topicStrategy,
+            this::handleUnexpectedFailureAndClosePipeline);
       }
 
       metricsService.setPipelineStatus(PipelineStatus.SNAPSHOTTING);
@@ -48,13 +56,21 @@ public class Pipeline implements Closeable, Runnable {
       metricsService.setPipelineStatus(PipelineStatus.STREAMING);
       streamer.stream();
     } catch (Exception e) {
-      log.error("Pipeline has stopped unexpectedly.", e);
-      if (emailHandler != null) {
-        emailHandler.sendEmail(e);
-      }
-      close();
+      handleUnexpectedFailure(e);
     } finally {
-      metricsService.setPipelineStatus(PipelineStatus.NOT_RUNNING);
+      close();
+    }
+  }
+
+  private void handleUnexpectedFailureAndClosePipeline(Exception e) {
+    handleUnexpectedFailure(e);
+    PipelineInitializer.haltPipeline();
+  }
+
+  private void handleUnexpectedFailure(Exception e) {
+    log.error("Pipeline has encountered an error.", e);
+    if (emailHandler != null) {
+      emailHandler.sendEmail(e);
     }
   }
 }

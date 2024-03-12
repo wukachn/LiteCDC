@@ -4,13 +4,14 @@ import com.thirdyearproject.changedatacaptureapplication.api.model.request.Topic
 import com.thirdyearproject.changedatacaptureapplication.engine.change.ChangeDataConsumer;
 import com.thirdyearproject.changedatacaptureapplication.engine.change.model.TableIdentifier;
 import com.thirdyearproject.changedatacaptureapplication.engine.consume.replicate.ChangeEventSink;
+import com.thirdyearproject.changedatacaptureapplication.engine.exception.ConsumerExceptionHandler;
 import com.thirdyearproject.changedatacaptureapplication.engine.metrics.MetricsService;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -19,7 +20,15 @@ import org.apache.kafka.clients.admin.NewTopic;
 
 @Slf4j
 public class KafkaConsumerManager {
-  private static ExecutorService executor = Executors.newFixedThreadPool(10);
+  private static final List<ChangeDataConsumer> consumers = new ArrayList<>();
+
+  public static void closeConsumers() {
+    log.info("Attempting to close consumers.");
+    for (var consumer : consumers) {
+      consumer.softInterrupt();
+    }
+    consumers.clear();
+  }
 
   public static void createConsumers(
       String bootstrapServer,
@@ -27,7 +36,8 @@ public class KafkaConsumerManager {
       Set<TableIdentifier> tables,
       ChangeEventSink eventProcessor,
       MetricsService metricsService,
-      TopicStrategy topicStrategy) {
+      TopicStrategy topicStrategy,
+      ConsumerExceptionHandler consumerExceptionHandler) {
     createTopicsIfNotExists(bootstrapServer, topicPrefix, tables, topicStrategy);
 
     if (topicStrategy == TopicStrategy.PER_TABLE) {
@@ -39,25 +49,31 @@ public class KafkaConsumerManager {
               .toList();
       for (var schemaTables : groupedBySchema) {
         // Consumer per Schema.
-        executor.submit(
+        var consumer =
             new ChangeDataConsumer(
                 bootstrapServer,
                 topicPrefix,
                 schemaTables,
                 eventProcessor,
                 metricsService,
-                topicStrategy));
+                topicStrategy,
+                consumerExceptionHandler);
+        consumers.add(consumer);
+        new Thread(consumer).start();
       }
     } else if (topicStrategy == TopicStrategy.SINGLE) {
       var allTables = tables.stream().toList();
-      executor.submit(
+      var consumer =
           new ChangeDataConsumer(
               bootstrapServer,
               topicPrefix,
               allTables,
               eventProcessor,
               metricsService,
-              topicStrategy));
+              topicStrategy,
+              consumerExceptionHandler);
+      consumers.add(consumer);
+      new Thread(consumer).start();
     }
   }
 
