@@ -20,17 +20,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class MetricsService {
 
-  @Setter PipelineStatus pipelineStatus = PipelineStatus.NOT_RUNNING;
-  Instant snapshotStartTime;
-  Instant snapshotEndTime;
-  Map<TableIdentifier, Pair<Long, Boolean>> snapshotTracker = new HashMap<>();
-  Map<TableIdentifier, CrudCount> crudTracker = new HashMap<>();
-  Instant pipelineStartTime;
-  Long dbProducerTimeLagMs;
-  Long producerConsumerTimeLagMs;
-  long numOfTransactions;
-  long totalConsumed;
-  long totalProduced;
+  private @Setter PipelineStatus pipelineStatus = PipelineStatus.NOT_RUNNING;
+  private Instant snapshotStartTime;
+  private Instant snapshotEndTime;
+  private Map<TableIdentifier, Pair<Long, Boolean>> snapshotTracker = new HashMap<>();
+  private Map<TableIdentifier, CrudCount> crudTracker = new HashMap<>();
+  private Instant pipelineStartTime;
+  private Long dbProducerTimeLagMs;
+  private Long producerConsumerTimeLagMs;
+  private long numOfTransactions;
+  private long totalConsumed;
+  private long totalProduced;
 
   public GetPipelineStatusResponse getPipelineStatus() {
     return GetPipelineStatusResponse.builder().status(pipelineStatus).build();
