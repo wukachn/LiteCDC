@@ -13,29 +13,27 @@ public class MySqlTypeUtils {
 
   public static String convertSqlTypeToString(int type, int size) {
     switch (type) {
-      case Types.BOOLEAN -> {
-        return "BOOLEAN";
+      case Types.BOOLEAN, Types.BIT -> {
+        // MySQL represents all booleans as BIT or TINYINT(1)
+        return "BIT";
       }
       case Types.TINYINT -> {
-        return String.format("TINYINT(%s)", size);
+        return "TINYINT";
       }
       case Types.SMALLINT -> {
-        return String.format("SMALLINT(%s)", size);
+        return "SMALLINT";
       }
       case Types.INTEGER -> {
-        return String.format("INT(%s)", size);
-      }
-      case Types.BIT -> {
-        return String.format("BIT(%s)", size);
+        return "INT";
       }
       case Types.BIGINT -> {
-        return String.format("BIGINT(%s)", size);
+        return "BIGINT";
       }
-      case Types.FLOAT -> {
-        return String.format("FLOAT(%s)", size);
+      case Types.FLOAT, Types.REAL -> {
+        return "FLOAT";
       }
       case Types.DOUBLE -> {
-        return String.format("DOUBLE(%s)", size);
+        return "DOUBLE";
       }
       default -> {
         if (size > 16383) {

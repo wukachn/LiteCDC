@@ -126,10 +126,10 @@ public class MySqlBatchingSink extends MySqlSink {
         var idx = afterIter.nextIndex() + 1;
         var column = afterIter.next();
         switch (column.getDetails().getSqlType()) {
-          case Types.BOOLEAN -> stmt.setBoolean(idx, (boolean) column.getValue());
-          case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIT, Types.BIGINT -> stmt
+          case Types.BOOLEAN,  Types.BIT -> stmt.setBoolean(idx, (boolean) column.getValue());
+          case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIGINT -> stmt
               .setLong(idx, (long) column.getValue());
-          case Types.FLOAT, Types.DOUBLE -> stmt.setDouble(idx, (Double) column.getValue());
+          case Types.FLOAT, Types.DOUBLE, Types.REAL -> stmt.setDouble(idx, (Double) column.getValue());
           default -> stmt.setString(idx, (String) column.getValue());
         }
       }

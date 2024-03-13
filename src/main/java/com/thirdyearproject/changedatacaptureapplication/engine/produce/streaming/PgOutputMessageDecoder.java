@@ -219,11 +219,11 @@ public class PgOutputMessageDecoder {
       Object value = null;
       if (!values.get(i).equals(NULL_IDENTIFIER)) {
         switch (type) {
-          case Types.BOOLEAN -> value = Boolean.valueOf(values.get(i));
-          case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIT -> value =
+          case Types.BOOLEAN, Types.BIT -> value = values.get(i).equals("t");
+          case Types.TINYINT, Types.SMALLINT, Types.INTEGER -> value =
               Integer.valueOf(values.get(i));
           case Types.BIGINT -> value = Long.valueOf(values.get(i));
-          case Types.FLOAT -> value = Float.valueOf(values.get(i));
+          case Types.FLOAT, Types.REAL -> value = Float.valueOf(values.get(i));
           case Types.DOUBLE -> value = Double.valueOf(values.get(i));
           default -> value = String.valueOf(values.get(i));
         }
