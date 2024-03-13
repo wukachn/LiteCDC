@@ -33,7 +33,8 @@ public class PostgresTypeUtils {
       case Oid.BIT:
         return Types.BIT;
       default:
-        throw new IllegalArgumentException("Unsupported OID: " + oid);
+        // Default to varchar, this may allow for support for types which aren't explicitly supported.
+        return Types.VARCHAR;
     }
   }
 }

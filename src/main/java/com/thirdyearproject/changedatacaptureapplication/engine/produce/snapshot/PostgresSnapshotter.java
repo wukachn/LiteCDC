@@ -146,16 +146,16 @@ public class PostgresSnapshotter extends Snapshotter {
 
   private Object getFromResultSet(ResultSet rs, ColumnDetails columnDetails) throws SQLException {
     switch (columnDetails.getSqlType()) {
-      case Types.BOOLEAN -> {
+      case Types.BOOLEAN, Types.BIT -> {
         return rs.getBoolean(columnDetails.getName());
       }
-      case Types.TINYINT, Types.SMALLINT, Types.INTEGER, Types.BIT -> {
+      case Types.TINYINT, Types.SMALLINT, Types.INTEGER -> {
         return rs.getInt(columnDetails.getName());
       }
       case Types.BIGINT -> {
         return rs.getLong(columnDetails.getName());
       }
-      case Types.FLOAT, Types.DOUBLE -> {
+      case Types.FLOAT, Types.DOUBLE, Types.REAL -> {
         return rs.getFloat(columnDetails.getName());
       }
       default -> {
