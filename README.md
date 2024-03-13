@@ -16,7 +16,7 @@ If you would like to run the app locally, you can use the following commands. Th
 
 ## Testing
 When running the tests, ensure that the follow environment variables are set in your run configuration:
- - PG_PASS=pg_password
- - MYSQL_PASS=mysql_password
+ - PG_PASS = `pg_password`
+ - MYSQL_PASS = `mysql_password`
 
-Known Issue: The end-to-end tests (EndToEnd___Test and NoDestination___Test) currently fail when ran in the same run configuration. These tests should be run in isolation.
+Known Issue: The end-to-end tests (`EndToEnd___Test` and `NoDestination___Test`) currently fail when ran in the same run configuration. These tests should be run in isolation.
