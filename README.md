@@ -9,3 +9,7 @@ I have provided an example docker-compose file to spin up the necessary componen
 To get started, import the example postman API collection to view some example requests to start your pipeline.
 
 For a more complete overview of the system, please refer to the project report.
+
+If you would like to run the app locally, you can use the following commands. This will spin up the necessary components to create a postgres -> mysql pipeline:
+1. `mvn clean install`
+2. `docker-compose --profile local-postgres --profile local-mysql up --build` (with test postgres and mysql dbs)
