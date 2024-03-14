@@ -57,10 +57,6 @@ public class PostgresStreamer extends Streamer {
         }
         var lsn = replicationStream.getLastReceiveLSN();
         pgOutputMessageDecoder.processNotEmptyMessage(message, lsn);
-
-        // https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-REPLICATION-VIEW:~:text=28.2.4.-,pg_stat_replication,-%23
-        replicationStream.setAppliedLSN(lsn);
-        replicationStream.setFlushedLSN(lsn);
       }
     } finally {
       replicationStream.close();
