@@ -1,4 +1,4 @@
-# Third Year Project: Change Data Capture
+# LiteCDC
 
 ## Overview
 This repo provides a simple application to push change events from a postgres source database to kafka for consumption. Additionally, an optional mysql sink is provided, allowing a user to consume their change data to replicate their source in a mysql instance.

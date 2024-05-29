@@ -28,14 +28,14 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
 
-  cdc-app:
+  lite-cdc:
     depends_on:
       - broker
       - zookeeper
-    container_name: cdc-app
+    container_name: lite-cdc
     build:
       dockerfile: Dockerfile
-    image: cdc-app:latest
+    image: lite-cdc:latest
     ports:
       - 8080:8080
     deploy:
