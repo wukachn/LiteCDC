@@ -3,12 +3,12 @@
     <module name="change-data-capture-app" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="com.thirdyearproject.changedatacaptureapplication.*" />
+        <option name="PATTERN" value="io.github.wukachn.litecdc.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>
-    <option name="PACKAGE_NAME" value="com.thirdyearproject.changedatacaptureapplication" />
-    <option name="MAIN_CLASS_NAME" value="com.thirdyearproject.changedatacaptureapplication.NoDestinationSingleTest" />
+    <option name="PACKAGE_NAME" value="io.github.wukachn.litecdc" />
+    <option name="MAIN_CLASS_NAME" value="io.github.wukachn.litecdc.NoDestinationSingleTest" />
     <option name="METHOD_NAME" value="" />
     <option name="TEST_OBJECT" value="class" />
     <envs>
