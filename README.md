@@ -1,22 +1,51 @@
 # LiteCDC
 
 ## Overview
-This repo provides a simple application to push change events from a postgres source database to kafka for consumption. Additionally, an optional mysql sink is provided, allowing a user to consume their change data to replicate their source in a mysql instance.
+LiteCDC is a lightweight Change Data Capture (CDC) solution designed for PostgreSQL databases, with optional replication to MySQL. It enables you to efficiently capture and track change events in your PostgreSQL databases, before sending them to Kafka for future consumption through an external application or using one of the internal MySQL sinks. 
+
+This behavior is determined by a user-defined pipeline, the architecture of which is illustrated below:
+![image](https://github.com/wukachn/LiteCDC/assets/68754675/c4cac017-0a78-43ea-8bf8-a4be2e2a6c75)
+
+For a more comprehensive overview of the system, please refer to the project report (`report.pdf`).
+
+## Requirements
+
+**PostgreSQL**:
+ - Version: `9.4+`
+ - wal_level: `logical`
+
+The (optional) sinks should work with most versions of MySQL but the application has been tested with versions `8.0+`.
 
 ## Getting Started
-I have provided an example docker-compose file to spin up the necessary components, this is for local testing and should not be used for real applications.
+The provided example `docker-compose.yml` file spins up the necessary components for local testing. Please note that this setup is intended for development and testing purposes only and should not be used for production environments.
 
-To get started, import the example postman API collection to view some example requests to start your pipeline.
+### Steps to Run Locally
+1. **Build the Project:**
 
-For a more complete overview of the system, please refer to the project report.
+   ```sh
+   mvn clean install
+   ```
+2. Start the Docker Containers
+   ```sh
+   docker-compose --profile local-postgres --profile local-mysql up --build
+   ```
+### Postman Collection
+Import the example Postman API collection (`postman_collection.json`) to view some sample requests and start up a demo pipeline.
 
-If you would like to run the app locally, you can use the following commands. This will spin up the necessary components to create a postgres -> mysql pipeline:
-1. `mvn clean install`
-2. `docker-compose --profile local-postgres --profile local-mysql up --build` (with test postgres and mysql dbs)
+The following requests are available:
+ - Run Pipeline: `POST /pipeline/run`
+ - Halt Pipeline: `POST /pipeline/halt`
+ - Get Pipeline Status: `GET /pipeline/status`
+ - Get Snapshot Metrics: `GET /pipeline/metrics/snapshot`
+ - Get (General) Metrics: `GET /pipeline/metrics`
 
 ## Testing
 When running the tests, ensure that the follow environment variables are set in your run configuration:
  - PG_PASS = `pg_password`
  - MYSQL_PASS = `mysql_password`
 
-Known Issue: The end-to-end tests (`EndToEnd___Test` and `NoDestination___Test`) currently fail when ran in the same run configuration. These tests should be run in isolation.
+**Known Issue:** The end-to-end tests (`EndToEnd___Test` and `NoDestination___Test`) currently fail when ran in the same run configuration. These tests should be run in isolation.
+
+## References
+ - https://github.com/davyam/pgEasyReplication
+ - https://github.com/debezium/debezium
