@@ -1,0 +1,23 @@
+package io.github.wukachn.litecdc.engine.jdbc;
+
+import io.github.wukachn.litecdc.api.model.request.database.ConnectionConfiguration;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+public class PostgresReplicationConnection extends JdbcConnection {
+  public PostgresReplicationConnection(ConnectionConfiguration connectionConfig) {
+    super(connectionConfig);
+  }
+
+  @Override
+  public Connection getConnection() throws SQLException {
+    if (super.connection == null || super.connection.isClosed()) {
+      var properties = connectionConfig.getJdbcProperties();
+      properties.setProperty("replication", "database");
+      properties.setProperty("preferQueryMode", "simple");
+      super.connection = DriverManager.getConnection(connectionConfig.getJdbcUrl(), properties);
+    }
+    return this.connection;
+  }
+}
