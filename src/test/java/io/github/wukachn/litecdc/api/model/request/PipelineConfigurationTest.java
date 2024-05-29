@@ -17,7 +17,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 
 public class PipelineConfigurationTest {
 
@@ -40,7 +39,7 @@ public class PipelineConfigurationTest {
     var source = mock(SourceConfiguration.class);
     var destination = mock(MySqlDestinationConfiguration.class);
     var kafka = mock(KafkaConfiguration.class);
-    var email = Mockito.mock(EmailConfiguration.class);
+    var email = mock(EmailConfiguration.class);
     doNothing().when(source).validate();
     when(kafka.getTopicStrategy()).thenReturn(topicStrategy);
     doNothing().when(destination).validate();
@@ -70,7 +69,7 @@ public class PipelineConfigurationTest {
     var source = mock(SourceConfiguration.class);
     var destination = mock(MySqlDestinationConfiguration.class);
     var kafka = mock(KafkaConfiguration.class);
-    var email = Mockito.mock(EmailConfiguration.class);
+    var email = mock(EmailConfiguration.class);
     doNothing().when(source).validate();
     when(kafka.getTopicStrategy()).thenReturn(topicStrategy);
     doNothing().when(destination).validate();
@@ -85,6 +84,6 @@ public class PipelineConfigurationTest {
             .emailConfig(email)
             .build();
 
-    assertThrows(ValidationException.class, () -> config.validate());
+    assertThrows(ValidationException.class, config::validate);
   }
 }

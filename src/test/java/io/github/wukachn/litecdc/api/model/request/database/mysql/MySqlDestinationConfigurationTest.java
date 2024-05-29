@@ -3,6 +3,7 @@ package io.github.wukachn.litecdc.api.model.request.database.mysql;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 
 import io.github.wukachn.litecdc.engine.consume.replicate.MySqlBatchingSink;
 import io.github.wukachn.litecdc.engine.consume.replicate.MySqlSink;
@@ -14,7 +15,6 @@ import org.junit.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 import org.springframework.test.annotation.DirtiesContext;
 import org.testcontainers.containers.MySQLContainer;
 
@@ -48,7 +48,7 @@ public class MySqlDestinationConfigurationTest {
             .sinkType(MySQLSinkType.TRANSACTIONAL)
             .build();
 
-    assertDoesNotThrow(() -> config.validate());
+    assertDoesNotThrow(config::validate);
   }
 
   @Test
@@ -66,13 +66,13 @@ public class MySqlDestinationConfigurationTest {
             .sinkType(MySQLSinkType.TRANSACTIONAL)
             .build();
 
-    assertThrows(SQLException.class, () -> config.validate());
+    assertThrows(SQLException.class, config::validate);
   }
 
   @ParameterizedTest
   @MethodSource("sinkPairs")
   public void createsCorrectSink(MySQLSinkType sinkType, Class<? extends MySqlSink> expectedClass) {
-    var connMock = Mockito.mock(MySqlConnectionConfiguration.class);
+    var connMock = mock(MySqlConnectionConfiguration.class);
     var config =
         MySqlDestinationConfiguration.builder()
             .connectionConfig(connMock)
