@@ -8,11 +8,11 @@
         <version>3.1.4</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.thirdyearproject</groupId>
-    <artifactId>change-data-capture-application</artifactId>
+    <groupId>io.github.wukachn</groupId>
+    <artifactId>litecdc</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>change-data-capture-application</name>
-    <description>Third Year Project - Change Data Capture Application</description>
+    <name>LiteCDC</name>
+    <description>LiteCDC (Third Year Project)</description>
     <properties>
         <java.version>17</java.version>
     </properties>
@@ -124,7 +124,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.thirdyearproject.changedatacaptureapplication.ChangeDataCaptureApplication</mainClass>
+                    <mainClass>io.github.wukachn.litecdc.LiteCDC</mainClass>
                 </configuration>
             </plugin>
         </plugins>

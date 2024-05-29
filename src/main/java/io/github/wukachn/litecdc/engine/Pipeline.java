@@ -1,0 +1,82 @@
+package io.github.wukachn.litecdc.engine;
+
+import io.github.wukachn.litecdc.api.model.request.PipelineConfiguration;
+import io.github.wukachn.litecdc.engine.exception.PipelineNotRunningException;
+import io.github.wukachn.litecdc.engine.kafka.KafkaConsumerManager;
+import io.github.wukachn.litecdc.engine.metrics.MetricsService;
+import io.github.wukachn.litecdc.engine.metrics.PipelineStatus;
+import io.github.wukachn.litecdc.engine.produce.snapshot.Snapshotter;
+import io.github.wukachn.litecdc.engine.produce.streaming.Streamer;
+import java.io.Closeable;
+import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
+
+@Slf4j
+@Builder
+public class Pipeline implements Closeable, Runnable {
+
+  PipelineConfiguration pipelineConfiguration;
+  Snapshotter snapshotter;
+  Streamer streamer;
+  MetricsService metricsService;
+  @Nullable EmailHandler emailHandler;
+
+  @Override
+  public void close() {
+    log.info("Closing pipeline.");
+    KafkaConsumerManager.closeConsumers();
+    metricsService.clear();
+    log.info("Pipeline closed.");
+  }
+
+  @Override
+  public void run() {
+    try {
+      metricsService.startingPipeline();
+      metricsService.setPipelineStatus(PipelineStatus.STARTING);
+      var tables = pipelineConfiguration.getSourceConfig().getTables();
+      if (pipelineConfiguration.getDestinationConfig() != null) {
+        var bootstrapServer = pipelineConfiguration.getKafkaConfig().getBootstrapServer();
+        var topicPrefix = pipelineConfiguration.getKafkaConfig().getTopicPrefix();
+        var eventProcessor = pipelineConfiguration.getDestinationConfig().createChangeEventSink();
+        var topicStrategy = pipelineConfiguration.getKafkaConfig().getTopicStrategy();
+        KafkaConsumerManager.createConsumers(
+            bootstrapServer,
+            topicPrefix,
+            tables,
+            eventProcessor,
+            metricsService,
+            topicStrategy,
+            this::handleUnexpectedFailureAndClosePipeline);
+      }
+
+      metricsService.setPipelineStatus(PipelineStatus.SNAPSHOTTING);
+      snapshotter.snapshot(tables);
+
+      metricsService.setPipelineStatus(PipelineStatus.STREAMING);
+      streamer.stream();
+    } catch (Exception e) {
+      handleUnexpectedFailure(e);
+    } finally {
+      close();
+    }
+  }
+
+  private void handleUnexpectedFailureAndClosePipeline(Exception e) {
+    handleUnexpectedFailure(e);
+    try {
+      PipelineInitializer.haltPipeline();
+    } catch (PipelineNotRunningException haltEx) {
+      // This will never happen.
+      log.error("Pipeline is not running.", haltEx);
+    }
+  }
+
+  private void handleUnexpectedFailure(Exception e) {
+    log.error("Pipeline has encountered an error.", e);
+    if (emailHandler != null) {
+      emailHandler.sendEmail(e);
+    }
+  }
+}
