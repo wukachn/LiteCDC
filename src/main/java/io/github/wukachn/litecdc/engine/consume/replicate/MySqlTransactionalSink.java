@@ -1,9 +1,10 @@
 package io.github.wukachn.litecdc.engine.consume.replicate;
 
 import io.github.wukachn.litecdc.api.model.request.database.mysql.MySqlConnectionConfiguration;
-import io.github.wukachn.litecdc.engine.JdbcConnection;
 import io.github.wukachn.litecdc.engine.change.model.CRUD;
 import io.github.wukachn.litecdc.engine.change.model.ChangeEvent;
+import io.github.wukachn.litecdc.engine.consume.MySqlSink;
+import io.github.wukachn.litecdc.engine.jdbc.JdbcConnection;
 import java.sql.SQLException;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;

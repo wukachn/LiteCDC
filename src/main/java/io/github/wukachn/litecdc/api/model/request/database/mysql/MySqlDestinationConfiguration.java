@@ -1,10 +1,10 @@
 package io.github.wukachn.litecdc.api.model.request.database.mysql;
 
 import io.github.wukachn.litecdc.api.model.request.database.DestinationConfiguration;
-import io.github.wukachn.litecdc.engine.JdbcConnection;
-import io.github.wukachn.litecdc.engine.consume.replicate.ChangeEventSink;
+import io.github.wukachn.litecdc.engine.consume.ChangeEventSink;
 import io.github.wukachn.litecdc.engine.consume.replicate.MySqlBatchingSink;
 import io.github.wukachn.litecdc.engine.consume.replicate.MySqlTransactionalSink;
+import io.github.wukachn.litecdc.engine.jdbc.JdbcConnection;
 import java.sql.SQLException;
 import lombok.Builder;
 import lombok.NonNull;

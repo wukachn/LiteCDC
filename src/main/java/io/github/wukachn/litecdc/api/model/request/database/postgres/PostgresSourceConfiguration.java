@@ -1,10 +1,10 @@
 package io.github.wukachn.litecdc.api.model.request.database.postgres;
 
 import io.github.wukachn.litecdc.api.model.request.database.SourceConfiguration;
-import io.github.wukachn.litecdc.engine.JdbcConnection;
-import io.github.wukachn.litecdc.engine.change.ChangeEventProducer;
 import io.github.wukachn.litecdc.engine.change.model.TableIdentifier;
 import io.github.wukachn.litecdc.engine.exception.SourceValidationException;
+import io.github.wukachn.litecdc.engine.jdbc.JdbcConnection;
+import io.github.wukachn.litecdc.engine.kafka.ChangeEventProducer;
 import io.github.wukachn.litecdc.engine.metrics.MetricsService;
 import io.github.wukachn.litecdc.engine.produce.snapshot.PostgresSnapshotter;
 import io.github.wukachn.litecdc.engine.produce.snapshot.Snapshotter;

@@ -1,4 +1,4 @@
-package io.github.wukachn.litecdc.engine;
+package io.github.wukachn.litecdc.engine.jdbc;
 
 import io.github.wukachn.litecdc.api.model.request.database.ConnectionConfiguration;
 import io.github.wukachn.litecdc.engine.change.model.ColumnDetails;

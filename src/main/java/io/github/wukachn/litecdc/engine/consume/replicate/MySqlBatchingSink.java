@@ -1,11 +1,12 @@
 package io.github.wukachn.litecdc.engine.consume.replicate;
 
 import io.github.wukachn.litecdc.api.model.request.database.mysql.MySqlConnectionConfiguration;
-import io.github.wukachn.litecdc.engine.MySqlBatchingConnection;
 import io.github.wukachn.litecdc.engine.change.model.CRUD;
 import io.github.wukachn.litecdc.engine.change.model.ChangeEvent;
 import io.github.wukachn.litecdc.engine.change.model.ColumnDetails;
 import io.github.wukachn.litecdc.engine.change.model.TableIdentifier;
+import io.github.wukachn.litecdc.engine.consume.MySqlSink;
+import io.github.wukachn.litecdc.engine.jdbc.MySqlBatchingConnection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;

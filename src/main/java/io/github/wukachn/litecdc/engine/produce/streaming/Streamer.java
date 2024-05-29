@@ -1,7 +1,7 @@
 package io.github.wukachn.litecdc.engine.produce.streaming;
 
-import io.github.wukachn.litecdc.engine.JdbcConnection;
 import io.github.wukachn.litecdc.engine.exception.PipelineException;
+import io.github.wukachn.litecdc.engine.jdbc.JdbcConnection;
 import io.github.wukachn.litecdc.engine.metrics.MetricsService;
 import java.io.IOException;
 import java.sql.SQLException;

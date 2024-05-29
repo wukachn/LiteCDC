@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
+import io.github.wukachn.litecdc.engine.consume.MySqlSink;
 import io.github.wukachn.litecdc.engine.consume.replicate.MySqlBatchingSink;
-import io.github.wukachn.litecdc.engine.consume.replicate.MySqlSink;
 import io.github.wukachn.litecdc.engine.consume.replicate.MySqlTransactionalSink;
 import java.sql.SQLException;
 import java.util.stream.Stream;

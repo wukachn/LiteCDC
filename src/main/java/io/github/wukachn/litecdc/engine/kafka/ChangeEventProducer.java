@@ -1,8 +1,7 @@
-package io.github.wukachn.litecdc.engine.change;
+package io.github.wukachn.litecdc.engine.kafka;
 
 import io.github.wukachn.litecdc.api.model.request.TopicStrategy;
 import io.github.wukachn.litecdc.engine.change.model.ChangeEvent;
-import io.github.wukachn.litecdc.engine.kafka.KafkaProducerService;
 import io.github.wukachn.litecdc.engine.metrics.MetricsService;
 import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;

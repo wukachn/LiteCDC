@@ -1,7 +1,7 @@
 package io.github.wukachn.litecdc.engine;
 
 import io.github.wukachn.litecdc.api.model.request.PipelineConfiguration;
-import io.github.wukachn.litecdc.engine.change.ChangeEventProducer;
+import io.github.wukachn.litecdc.engine.kafka.ChangeEventProducer;
 import io.github.wukachn.litecdc.engine.metrics.MetricsService;
 import lombok.AllArgsConstructor;
 

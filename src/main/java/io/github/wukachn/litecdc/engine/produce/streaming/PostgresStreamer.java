@@ -1,9 +1,9 @@
 package io.github.wukachn.litecdc.engine.produce.streaming;
 
 import io.github.wukachn.litecdc.api.model.request.database.ConnectionConfiguration;
-import io.github.wukachn.litecdc.engine.JdbcConnection;
-import io.github.wukachn.litecdc.engine.PostgresReplicationConnection;
-import io.github.wukachn.litecdc.engine.change.ChangeEventProducer;
+import io.github.wukachn.litecdc.engine.jdbc.JdbcConnection;
+import io.github.wukachn.litecdc.engine.jdbc.PostgresReplicationConnection;
+import io.github.wukachn.litecdc.engine.kafka.ChangeEventProducer;
 import io.github.wukachn.litecdc.engine.metrics.MetricsService;
 import java.io.IOException;
 import java.sql.SQLException;

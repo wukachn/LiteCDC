@@ -1,9 +1,8 @@
 package io.github.wukachn.litecdc.engine.kafka;
 
 import io.github.wukachn.litecdc.api.model.request.TopicStrategy;
-import io.github.wukachn.litecdc.engine.change.ChangeDataConsumer;
 import io.github.wukachn.litecdc.engine.change.model.TableIdentifier;
-import io.github.wukachn.litecdc.engine.consume.replicate.ChangeEventSink;
+import io.github.wukachn.litecdc.engine.consume.ChangeEventSink;
 import io.github.wukachn.litecdc.engine.exception.ConsumerExceptionHandler;
 import io.github.wukachn.litecdc.engine.metrics.MetricsService;
 import java.util.ArrayList;

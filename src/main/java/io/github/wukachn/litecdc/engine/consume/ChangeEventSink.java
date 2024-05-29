@@ -1,4 +1,4 @@
-package io.github.wukachn.litecdc.engine.consume.replicate;
+package io.github.wukachn.litecdc.engine.consume;
 
 import io.github.wukachn.litecdc.engine.change.model.ChangeEvent;
 import java.util.List;

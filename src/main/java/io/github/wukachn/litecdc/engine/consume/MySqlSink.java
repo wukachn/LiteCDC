@@ -1,10 +1,10 @@
-package io.github.wukachn.litecdc.engine.consume.replicate;
+package io.github.wukachn.litecdc.engine.consume;
 
-import io.github.wukachn.litecdc.engine.JdbcConnection;
 import io.github.wukachn.litecdc.engine.change.model.CRUD;
 import io.github.wukachn.litecdc.engine.change.model.ChangeEvent;
 import io.github.wukachn.litecdc.engine.change.model.ColumnDetails;
 import io.github.wukachn.litecdc.engine.change.model.TableIdentifier;
+import io.github.wukachn.litecdc.engine.jdbc.JdbcConnection;
 import io.github.wukachn.litecdc.util.MySqlTypeUtils;
 import java.sql.SQLException;
 import java.util.*;

@@ -1,8 +1,8 @@
 package io.github.wukachn.litecdc.engine.produce.streaming;
 
-import io.github.wukachn.litecdc.engine.change.ChangeEventProducer;
 import io.github.wukachn.litecdc.engine.change.model.ChangeEvent;
 import io.github.wukachn.litecdc.engine.change.model.PostgresMetadata;
+import io.github.wukachn.litecdc.engine.kafka.ChangeEventProducer;
 import io.github.wukachn.litecdc.engine.metrics.MetricsService;
 import java.util.ArrayList;
 import java.util.List;
